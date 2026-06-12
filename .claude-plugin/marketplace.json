@@ -4,12 +4,12 @@
     "name": "soulland",
     "email": "fodawn2@gmail.com"
   },
-  "description": "goal-kick 自建插件市场：世界杯进球终端特效",
+  "description": "goal-kick marketplace: World Cup goal effects for your terminal",
   "plugins": [
     {
       "name": "goal-kick",
       "source": "./plugin",
-      "description": "世界杯进球时，像素小人从状态栏跑出、在桌面射门庆祝，随后状态栏常驻比分（macOS + Hammerspoon）"
+      "description": "When your World Cup team scores, a pixel runner leaps out of your terminal and kicks a GOOOAL celebration on your desktop (macOS + Hammerspoon). 世界杯进球终端特效。"
     }
   ]
 }

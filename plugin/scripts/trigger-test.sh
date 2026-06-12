@@ -8,8 +8,9 @@ set -eu
 GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
 STATE_FILE="$GK_DIR/state.json"
 
-TEAM="阿根廷"; FLAG="🇦🇷"; OPPONENT="法国"; SCORE="2-1"; SCORER="梅西"; MINUTE=78
-JERSEY="#74acdf"; STRIPE="#ffffff"; SHORTS="#1a1a2e"   # 默认阿根廷主场球衣
+# --team 必填（不预设任何球队）；其余字段可选
+TEAM=""; FLAG=""; OPPONENT=""; SCORE="1-0"; SCORER=""; MINUTE=0
+JERSEY=""; STRIPE=""; SHORTS=""
 NO_OVERLAY=0
 
 while [ $# -gt 0 ]; do
@@ -24,9 +25,24 @@ while [ $# -gt 0 ]; do
     --stripe)   STRIPE="$2"; shift 2 ;;
     --shorts)   SHORTS="$2"; shift 2 ;;
     --no-overlay) NO_OVERLAY=1; shift ;;
-    *) echo "未知参数: $1" >&2; exit 2 ;;
+    *) echo "未知参数 unknown arg: $1" >&2; exit 2 ;;
   esac
 done
+
+if [ -z "$TEAM" ]; then
+  echo "用法 usage: trigger-test.sh --team <名称> [--flag <emoji>] [--opponent <名称>]" >&2
+  echo "  [--score 2-1] [--scorer <名字>] [--minute N] [--jersey/--stripe/--shorts <#hex>] [--no-overlay]" >&2
+  echo "必须指定 --team（测试动画不预设球队）。" >&2
+  exit 2
+fi
+[ -n "$OPPONENT" ] || { case "${LC_ALL:-${LANG:-}}" in zh*) OPPONENT="对手" ;; *) OPPONENT="Rivals" ;; esac; }
+
+# 球衣三色齐全才写 kit 字段，否则 overlay 使用默认配色
+KIT_JSON=""
+if [ -n "$JERSEY" ] && [ -n "$STRIPE" ] && [ -n "$SHORTS" ]; then
+  KIT_JSON=",
+    \"kit\": { \"jersey\": \"$JERSEY\", \"stripe\": \"$STRIPE\", \"shorts\": \"$SHORTS\" }"
+fi
 
 mkdir -p "$GK_DIR"
 NOW=$(date +%s)
@@ -52,8 +68,7 @@ cat > "$TMP" <<EOF
     "score": "$SCORE",
     "scorer": "$SCORER",
     "minute": $MINUTE,
-    "ts": $NOW.0,
-    "kit": { "jersey": "$JERSEY", "stripe": "$STRIPE", "shorts": "$SHORTS" }
+    "ts": $NOW.0$KIT_JSON
   },
   "timeline": {
     "statusline_run": [0.0, 3.0],

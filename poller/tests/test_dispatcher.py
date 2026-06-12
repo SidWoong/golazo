@@ -18,7 +18,8 @@ def mk_event(etype="goal", scoring="home"):
 def base_cfg(**over):
     cfg = {"followed_teams": [{"provider_team_id": 762, "name_zh": "阿根廷",
                                "name_en": "Argentina", "flag": "🇦🇷"}],
-           "overlay_enabled": True, "scoreboard_hold_min": 10, "muted_until": 0}
+           "overlay_enabled": True, "scoreboard_hold_min": 10, "muted_until": 0,
+           "lang": "zh"}
     cfg.update(over)
     return cfg
 
@@ -32,6 +33,12 @@ def test_goal_state_and_timeline():
     assert tl["statusline_run"] == [0.0, 3.0] and tl["handoff"] == 3.0
     assert tl["overlay_play"] == [3.0, 11.2]
     assert tl["scoreboard_hold"] == [11.2, 611.2]   # 10 分钟常驻
+
+
+def test_english_display_names():
+    # lang=en：队名用英文展示（i18n 在 dispatcher 单点完成，读取方只渲染字符串）
+    st = dispatcher.build_state(mk_event(), base_cfg(lang="en"))
+    assert st["event"]["team"] == "Argentina" and st["event"]["opponent"] == "France"
 
 
 def test_goal_event_carries_team_kit():

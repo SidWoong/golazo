@@ -52,6 +52,26 @@ def _resolve_team_ids(provider, cfg: dict) -> bool:
     return changed
 
 
+def _enrich_scorer(provider, ev) -> None:
+    """进球事件补查进球者（列表接口不含人名）。失败静默——没有人名也照常庆祝。"""
+    if ev.type not in ("goal", "opponent_goal"):
+        return
+    try:
+        detail = provider.last_goal(ev.match.id)
+    except Exception:
+        return
+    if not detail:
+        return
+    scoring_id = ev.match.home_id if ev.scoring_side == "home" else ev.match.away_id
+    # 防错配：详情里最近一粒进球必须属于本次检测到的进球方
+    if detail.team_id and detail.team_id != scoring_id:
+        return
+    if detail.scorer:
+        ev.match.scorer = detail.scorer
+    if detail.minute:
+        ev.match.minute = detail.minute
+
+
 def run_loop(*, once: bool = False) -> None:
     """主循环。once=True 时只执行一轮（测试用）。"""
     pid_path().parent.mkdir(parents=True, exist_ok=True)
@@ -103,6 +123,7 @@ def run_loop(*, once: bool = False) -> None:
             continue
 
         for ev in detector.process(matches, ids):
+            _enrich_scorer(provider, ev)
             dispatch(ev, cfg)
 
         # 智能间隔：有进行中比赛 → 高频；否则休眠到下一场开赛前 5 分钟（期间低频校对）

@@ -13,11 +13,19 @@ input=$(cat)
 cols="${COLUMNS:-80}"
 now=$(date +%s)
 
+# 展示语言：config.lang 显式指定优先，auto/缺失时按系统 locale 判定
+gk_lang=""
+[ -r "$CONFIG_FILE" ] && gk_lang=$(sed -n 's/.*"lang"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CONFIG_FILE" | head -1)
+case "$gk_lang" in
+  zh|en) ;;
+  *) case "${LC_ALL:-${LANG:-}}" in zh*) gk_lang=zh ;; *) gk_lang=en ;; esac ;;
+esac
+
 # ── 模式一：state.json 时间轴渲染 ─────────────────────────────────────────────
 # 单次 awk 完成：解析（整文件 slurp，不依赖键顺序/换行格式）→ 时间轴分支 → 输出。
 # 命不中任何窗口时输出空，交给后面的透传逻辑。
 if [ -r "$STATE_FILE" ]; then
-  rendered=$(awk -v now="$now" -v cols="$cols" '
+  rendered=$(awk -v now="$now" -v cols="$cols" -v lang="$gk_lang" '
     { buf = buf $0 " " }
 
     # 提取字符串字段："key": "value"（值内不允许出现双引号，由写入方保证）
@@ -85,17 +93,23 @@ if [ -r "$STATE_FILE" ]; then
       }
       # 分支二：交接后、覆盖层播放期间（覆盖层窗口非零长）
       if (ov2 > ov1 && elapsed >= handoff && elapsed < ov2) {
-        printf "%s\xe2\x9a\xbd 小人离开了终端，正在你的桌面上\xe2\x80\xa6%s\n", DIM, R
+        msg = (lang == "zh") ? "小人离开了终端，正在你的桌面上\xe2\x80\xa6" \
+                             : "The runner left the terminal \xe2\x80\x94 now on your desktop\xe2\x80\xa6"
+        printf "%s\xe2\x9a\xbd %s%s\n", DIM, msg, R
         exit
       }
       # 分支三：比分常驻 / 对手进球 / VAR 取消
       if (elapsed >= hold1 && elapsed < hold2) {
         if (type == "goal")
           printf "%s\xe2\x9a\xbd GOOOAL! %s %s %s %s%s%s\n", GOLD, flag, team, score, opp, note, R
-        else if (type == "opponent_goal")
-          printf "%s\xe2\x9a\xbd %s 进球了\xe2\x80\xa6 %s%s\n", DIM, team, score, R
-        else if (type == "var_cancel")
-          printf "%s进球被 VAR 取消 \xf0\x9f\x98\xa4%s\n", DIM, R
+        else if (type == "opponent_goal") {
+          msg = (lang == "zh") ? " 进球了\xe2\x80\xa6 " : " scored\xe2\x80\xa6 "
+          printf "%s\xe2\x9a\xbd %s%s%s%s\n", DIM, team, msg, score, R
+        }
+        else if (type == "var_cancel") {
+          msg = (lang == "zh") ? "进球被 VAR 取消 \xf0\x9f\x98\xa4" : "Goal disallowed by VAR \xf0\x9f\x98\xa4"
+          printf "%s%s%s\n", DIM, msg, R
+        }
         exit
       }
     }

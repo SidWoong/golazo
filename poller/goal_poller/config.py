@@ -19,14 +19,24 @@ DEFAULTS: dict[str, Any] = {
     "followed_teams": [],
     "provider": "football_data",
     "api_token": "",
-    "proxy": "http://127.0.0.1:7890",
+    "proxy": "",
     "poll_interval_sec": 20,
     "idle_interval_sec": 300,
     "overlay_enabled": True,
     "scoreboard_hold_min": 10,
     "wrapped_statusline_cmd": "",
     "muted_until": 0,
+    "lang": "auto",          # 展示语言：zh / en / auto（auto 按系统 locale 判定）
 }
+
+
+def resolve_lang(cfg: dict[str, Any]) -> str:
+    """解析展示语言。auto 时读系统 locale（LC_ALL > LANG），中文环境 zh，其余 en。"""
+    lang = str(cfg.get("lang", "auto")).lower()
+    if lang in ("zh", "en"):
+        return lang
+    locale = os.environ.get("LC_ALL") or os.environ.get("LANG") or ""
+    return "zh" if locale.lower().startswith("zh") else "en"
 
 
 def atomic_write_json(path: Path, data: dict) -> None:

@@ -9,6 +9,7 @@ import subprocess
 import time
 
 from . import teams
+from . import config as cfgmod
 from .config import atomic_write_json
 from .detector import GoalEvent
 from .paths import log_path, state_path
@@ -19,14 +20,20 @@ OVERLAY_DUR = 8.2
 NOTICE_HOLD = 90.0      # opponent_goal / var_cancel 的提示时长
 
 
-def _zh_name(api_name: str, cfg: dict) -> tuple[str, str]:
-    """provider 英文队名 → (中文名, 旗帜)。优先 config 关注列表，回退静态表，再回退原名。"""
+def _team_display(api_name: str, cfg: dict) -> tuple[str, str]:
+    """provider 英文队名 → (本地化展示名, 旗帜)。
+
+    展示语言由 config.lang 决定（i18n 单点：读取方只渲染本函数写出的字符串）。
+    优先 config 关注列表，回退静态表，再回退 API 原名。
+    """
+    lang = cfgmod.resolve_lang(cfg)
+    key = "name_zh" if lang == "zh" else "name_en"
     for t in cfg.get("followed_teams", []):
         if t.get("name_en", "").lower() == api_name.lower():
-            return t.get("name_zh") or api_name, t.get("flag", "")
+            return t.get(key) or api_name, t.get("flag", "")
     hit = teams.match_api_name(api_name)
     if hit:
-        return hit["name_zh"], hit["flag"]
+        return hit[key], hit["flag"]
     return api_name, ""
 
 
@@ -39,13 +46,13 @@ def build_state(ge: GoalEvent, cfg: dict) -> dict:
     o_score = m.away_score if ge.followed_side == "home" else m.home_score
 
     if ge.type == "goal":
-        team_zh, flag = _zh_name(followed_name, cfg)
-        opp_zh, _ = _zh_name(opponent_name, cfg)
+        team_zh, flag = _team_display(followed_name, cfg)
+        opp_zh, _ = _team_display(opponent_name, cfg)
     else:
         # opponent_goal / var_cancel：event.team 为提示主语（对手或本队，见 schema）
-        team_zh, flag = _zh_name(opponent_name, cfg) if ge.type == "opponent_goal" \
-            else _zh_name(followed_name, cfg)
-        opp_zh, _ = _zh_name(followed_name if ge.type == "opponent_goal" else opponent_name, cfg)
+        team_zh, flag = _team_display(opponent_name, cfg) if ge.type == "opponent_goal" \
+            else _team_display(followed_name, cfg)
+        opp_zh, _ = _team_display(followed_name if ge.type == "opponent_goal" else opponent_name, cfg)
 
     hold_sec = float(cfg.get("scoreboard_hold_min", 10)) * 60.0
     if ge.type == "goal":

@@ -1,7 +1,7 @@
 """CLI 入口：python -m goal_poller <子命令>
 
 斜杠命令（plugin/commands/*.md）只通过这里的子命令读写配置，禁止手写 JSON。
-输出为面向人/Claude 的简洁中文行文本。
+输出为英文行文本（开源惯例；中文用户经 Claude 中转交互）。
 """
 from __future__ import annotations
 
@@ -26,16 +26,16 @@ def cmd_config(args: argparse.Namespace) -> int:
 
     if action == "list":
         if not cfg["followed_teams"]:
-            print("当前没有关注任何球队。")
+            print("No teams followed yet.")
         for t in cfg["followed_teams"]:
-            rid = t.get("provider_team_id") or "未解析"
-            print(f"{t.get('flag','')} {t['name_zh']}（{t.get('name_en','')}，id={rid}）")
+            rid = t.get("provider_team_id") or "unresolved"
+            print(f"{t.get('flag','')} {t['name_zh']} / {t.get('name_en','')} (id={rid})")
         return 0
 
     if action == "search-team":
         hits = teams.search(args.keyword)
         if not hits:
-            print(f"未找到匹配“{args.keyword}”的 2026 世界杯参赛队。")
+            print(f"No 2026 World Cup team matches '{args.keyword}'.")
             return 1
         for t in hits:
             print(f"{t['flag']} {t['name_zh']} / {t['name_en']} ({t['tla']})")
@@ -44,10 +44,10 @@ def cmd_config(args: argparse.Namespace) -> int:
     if action == "add-team":
         hits = teams.search(args.keyword)
         if not hits:
-            print(f"未找到匹配“{args.keyword}”的参赛队，请用 search-team 先确认。")
+            print(f"No team matches '{args.keyword}'; try search-team first.")
             return 1
         if len(hits) > 1:
-            print(f"“{args.keyword}”匹配到多支球队，请更精确：")
+            print(f"'{args.keyword}' matches multiple teams; be more specific:")
             for t in hits:
                 print(f"  {t['flag']} {t['name_zh']} / {t['name_en']}")
             return 2
@@ -66,16 +66,16 @@ def cmd_config(args: argparse.Namespace) -> int:
             except Exception:
                 pass
         cfgmod.save(cfg)
-        print(f"{'已关注' if added else '已在关注列表（信息已刷新）'}：{t['flag']} {t['name_zh']}")
+        print(f"{'Following' if added else 'Already following (refreshed)'}: {t['flag']} {t['name_zh']} / {t['name_en']}")
         return 0
 
     if action == "remove-team":
         removed = cfgmod.remove_team(cfg, args.keyword)
         cfgmod.save(cfg)
         if removed:
-            print("已取消关注：" + "、".join(removed))
+            print("Unfollowed: " + ", ".join(removed))
             return 0
-        print(f"关注列表中没有匹配“{args.keyword}”的球队。")
+        print(f"No followed team matches '{args.keyword}'.")
         return 1
 
     if action == "get":
@@ -87,7 +87,7 @@ def cmd_config(args: argparse.Namespace) -> int:
 
     if action == "set":
         if args.key not in cfgmod.DEFAULTS:
-            print(f"未知配置项：{args.key}（合法项：{', '.join(cfgmod.DEFAULTS)}）")
+            print(f"Unknown config key: {args.key} (valid: {', '.join(cfgmod.DEFAULTS)})")
             return 1
         default = cfgmod.DEFAULTS[args.key]
         raw = args.value
@@ -100,14 +100,14 @@ def cmd_config(args: argparse.Namespace) -> int:
         elif isinstance(default, float):
             value = float(raw)
         elif isinstance(default, list):
-            print("列表项请用 add-team / remove-team 管理。")
+            print("Use add-team / remove-team to manage list values.")
             return 1
         cfg[args.key] = value
         cfgmod.save(cfg)
-        print(f"已设置 {args.key} = {json.dumps(value, ensure_ascii=False)}")
+        print(f"Set {args.key} = {json.dumps(value, ensure_ascii=False)}")
         return 0
 
-    print(f"未知 config 动作：{action}")
+    print(f"Unknown config action: {action}")
     return 2
 
 
@@ -125,7 +125,7 @@ def parse_mute_expr(expr: str, now: float | None = None) -> float:
         return midnight.timestamp()
     m = re.fullmatch(r"(\d+(?:\.\d+)?)\s*(h|m|s|小时|时|分钟|分|秒)", e)
     if not m:
-        raise ValueError(f"无法理解的静音时长：{expr}（支持 2h / 30m / 90s / 今天 / off）")
+        raise ValueError(f"Cannot parse mute duration: {expr} (try 2h / 30m / 90s / today / off)")
     n = float(m.group(1))
     unit = {"h": 3600, "小时": 3600, "时": 3600,
             "m": 60, "分钟": 60, "分": 60, "s": 1, "秒": 1}[m.group(2)]
@@ -142,9 +142,9 @@ def cmd_mute(args: argparse.Namespace) -> int:
     cfg["muted_until"] = until
     cfgmod.save(cfg)
     if until == 0:
-        print("已解除静音。")
+        print("Mute lifted.")
     else:
-        print("已静音至 " + dt.datetime.fromtimestamp(until).strftime("%m-%d %H:%M"))
+        print("Muted until " + dt.datetime.fromtimestamp(until).strftime("%m-%d %H:%M"))
     return 0
 
 
@@ -154,29 +154,29 @@ def cmd_probe(_: argparse.Namespace) -> int:
     cfg = cfgmod.load()
     provider = make_provider(cfg)
     if not hasattr(provider, "probe"):
-        print(f"provider {cfg['provider']} 未实现 probe。")
+        print(f"provider {cfg['provider']} does not implement probe.")
         return 2
     r = provider.probe()
     print(("✅ " if r.ok else "❌ ") + r.detail)
     if r.rate_limit_remaining:
-        print(f"本分钟剩余请求配额：{r.rate_limit_remaining}")
+        print(f"Requests remaining this minute: {r.rate_limit_remaining}")
     return 0 if r.ok else 1
 
 
 def cmd_status(_: argparse.Namespace) -> int:
     cfg = cfgmod.load()
-    print(f"数据目录：{base_dir()}")
-    print(f"关注球队：{'、'.join(t['name_zh'] for t in cfg['followed_teams']) or '（无）'}")
+    print(f"Data dir: {base_dir()}")
+    print("Followed: " + (", ".join(f"{t['name_zh']}/{t['name_en']}" for t in cfg["followed_teams"]) or "(none)"))
     muted = float(cfg.get("muted_until", 0))
     if muted > time.time():
-        print("静音中，至 " + dt.datetime.fromtimestamp(muted).strftime("%m-%d %H:%M"))
+        print("Muted until " + dt.datetime.fromtimestamp(muted).strftime("%m-%d %H:%M"))
     try:
         hb = json.loads(status_path().read_text(encoding="utf-8"))
         age = time.time() - hb.get("last_poll_ts", 0)
-        print(f"poller：pid={hb.get('pid')}，状态={hb.get('state')}，"
-              f"上次轮询 {int(age)} 秒前，窗口内比赛 {hb.get('matches_in_window', '?')} 场")
+        print(f"poller: pid={hb.get('pid')}, state={hb.get('state')}, "
+              f"last poll {int(age)}s ago, matches in window: {hb.get('matches_in_window', '?')}")
     except (FileNotFoundError, json.JSONDecodeError):
-        print("poller：尚未运行（无心跳文件）")
+        print("poller: not running (no heartbeat file)")
     return 0
 
 
@@ -189,21 +189,21 @@ def cmd_run(args: argparse.Namespace) -> int:
 # ── 入口 ───────────────────────────────────────────────────────────────────
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="goal_poller", description="goal-kick 进球监控守护进程")
+    p = argparse.ArgumentParser(prog="goal_poller", description="goal-kick goal-watch daemon")
     sub = p.add_subparsers(dest="command", required=True)
 
-    run_p = sub.add_parser("run", help="启动守护进程主循环")
-    run_p.add_argument("--once", action="store_true", help="只执行一轮（调试用）")
+    run_p = sub.add_parser("run", help="run the polling daemon loop")
+    run_p.add_argument("--once", action="store_true", help="run a single iteration (debug)")
     run_p.set_defaults(fn=cmd_run)
 
-    sub.add_parser("probe", help="验证数据源连通性与世界杯数据可用性").set_defaults(fn=cmd_probe)
-    sub.add_parser("status", help="展示关注列表与 poller 心跳").set_defaults(fn=cmd_status)
+    sub.add_parser("probe", help="verify provider connectivity and World Cup coverage").set_defaults(fn=cmd_probe)
+    sub.add_parser("status", help="show followed teams and poller heartbeat").set_defaults(fn=cmd_status)
 
-    mute_p = sub.add_parser("mute", help="静音（2h / 30m / 今天 / off）")
+    mute_p = sub.add_parser("mute", help="mute effects (2h / 30m / today / off)")
     mute_p.add_argument("duration")
     mute_p.set_defaults(fn=cmd_mute)
 
-    cfg_p = sub.add_parser("config", help="配置读写（唯一合法的配置修改通道）")
+    cfg_p = sub.add_parser("config", help="read/write config (the only sanctioned channel)")
     cfg_sub = cfg_p.add_subparsers(dest="config_action", required=True)
     cfg_sub.add_parser("list")
     for name in ("search-team", "add-team", "remove-team"):

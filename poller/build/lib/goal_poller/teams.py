@@ -66,6 +66,46 @@ TEAMS_WC2026: list[dict] = [
 ]
 
 
+# 各队主场球衣配色（jersey 衣身 / stripe 辅色 / shorts 短裤），overlay 给像素小人换装用
+KITS: dict[str, tuple[str, str, str]] = {
+    "AUS": ("#ffcd00", "#00843d", "#00843d"), "IRN": ("#ffffff", "#da0000", "#ffffff"),
+    "IRQ": ("#007a3d", "#ffffff", "#ffffff"), "JPN": ("#1d2088", "#ffffff", "#ffffff"),
+    "JOR": ("#ce1126", "#ffffff", "#ffffff"), "QAT": ("#8a1538", "#ffffff", "#8a1538"),
+    "KSA": ("#ffffff", "#006c35", "#ffffff"), "KOR": ("#cd2e3a", "#0f64cd", "#1a1a1a"),
+    "UZB": ("#ffffff", "#0099b5", "#0099b5"),
+    "ALG": ("#ffffff", "#006233", "#ffffff"), "CPV": ("#003893", "#cf2027", "#ffffff"),
+    "COD": ("#0085ca", "#fdd116", "#0085ca"), "EGY": ("#ce1126", "#ffffff", "#1a1a1a"),
+    "GHA": ("#ffffff", "#000000", "#1a1a1a"), "CIV": ("#ff8200", "#ffffff", "#ffffff"),
+    "MAR": ("#c1272d", "#006233", "#006233"), "SEN": ("#ffffff", "#00853f", "#ffffff"),
+    "RSA": ("#ffb612", "#007749", "#007749"), "TUN": ("#e70013", "#ffffff", "#ffffff"),
+    "CAN": ("#d80621", "#ffffff", "#d80621"), "CUW": ("#002b7f", "#f9e814", "#002b7f"),
+    "HAI": ("#00209f", "#d21034", "#d21034"), "MEX": ("#006847", "#ffffff", "#ffffff"),
+    "PAN": ("#d21034", "#ffffff", "#d21034"), "USA": ("#ffffff", "#002868", "#002868"),
+    "ARG": ("#74acdf", "#ffffff", "#1a1a2e"), "BRA": ("#ffdc02", "#009b3a", "#002776"),
+    "COL": ("#fcd116", "#003893", "#003893"), "ECU": ("#ffd100", "#0033a0", "#0033a0"),
+    "PAR": ("#d52b1e", "#ffffff", "#0038a8"), "URU": ("#6fb1e0", "#ffffff", "#1a1a1a"),
+    "NZL": ("#ffffff", "#000000", "#1a1a1a"),
+    "AUT": ("#ed2939", "#ffffff", "#ed2939"), "BEL": ("#e30613", "#1a1a1a", "#e30613"),
+    "BIH": ("#002f6c", "#fecb00", "#002f6c"), "CRO": ("#e63946", "#ffffff", "#ffffff"),
+    "CZE": ("#d7141a", "#ffffff", "#ffffff"), "ENG": ("#ffffff", "#002366", "#002366"),
+    "FRA": ("#002654", "#ffffff", "#ffffff"), "GER": ("#ffffff", "#000000", "#1a1a1a"),
+    "NED": ("#ff7f00", "#ffffff", "#ffffff"), "NOR": ("#c8102e", "#ffffff", "#00205b"),
+    "POR": ("#9e1b32", "#046a38", "#046a38"), "SCO": ("#003078", "#ffffff", "#ffffff"),
+    "ESP": ("#aa151b", "#f1bf00", "#002496"), "SWE": ("#ffcd00", "#004b87", "#004b87"),
+    "SUI": ("#d52b1e", "#ffffff", "#ffffff"), "TUR": ("#e30a17", "#ffffff", "#ffffff"),
+}
+
+
+def kit_for(entry: dict | None) -> dict | None:
+    """静态表条目 → kit 字典（写入 state.json event.kit）。未知球队返回 None。"""
+    if not entry:
+        return None
+    k = KITS.get(entry.get("tla", ""))
+    if not k:
+        return None
+    return {"jersey": k[0], "stripe": k[1], "shorts": k[2]}
+
+
 def search(keyword: str) -> list[dict]:
     """模糊查询：关键词对 name_zh / name_en / tla / aliases 做大小写不敏感子串匹配。"""
     kw = keyword.strip().lower()

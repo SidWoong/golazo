@@ -1,22 +1,24 @@
 # goal-kick ⚽
 
-> 世界杯期间写代码，不错过你的球队的每一个进球——而且是以"像素小人从 Claude Code 状态栏跑出来、跳上桌面射门庆祝"的方式得知。
+> Don't miss a single goal from your World Cup team while you code — get told by a pixel runner who dashes out of your Claude Code statusline, leaps onto your desktop, and kicks a GOOOAL celebration.
 
-![演示](docs/demo.gif)
+**English** | [简体中文](README.zh-CN.md)
 
-*↑ 录制 GIF 后替换 `docs/demo.gif`（可用 `/goal-kick:test` 触发完整动画录屏）*
+![demo](docs/demo.gif)
 
-## 它做了什么
+*↑ Record a GIF via `/goal-kick:test` and replace `docs/demo.gif`*
 
-关注的球队进球时：
+## What it does
 
-1. Claude Code **状态栏**播放 ASCII 小人助跑动画（3 秒）
-2. 小人从终端窗口右缘**跳出**，落到桌面上助跑、射门、球入网、150 片彩带 + 金色 **GOOOAL!** 大字（7 秒，Hammerspoon 覆盖层，点击穿透不抢焦点）
-3. 状态栏**常驻比分** 10 分钟：`⚽ GOOOAL! 🇦🇷 阿根廷 2-1 法国 (78′ 梅西)`
+When a team you follow scores:
 
-平时状态栏完全透传你原有的 statusline 配置，无感共存。
+1. Your Claude Code **statusline** plays an ASCII runner sprint (3s)
+2. The runner dashes along your terminal window's bottom edge, then **leaps out of the window frame** onto the desktop — wearing the scoring team's **actual kit colors** — sprints, shoots, and the net bulges into a golden **GOOOAL!** with 150 confetti pieces (8s overlay, click-through, never steals focus)
+3. The statusline keeps the score for 10 minutes: `⚽ GOOOAL! 🇦🇷 Argentina 2-1 France`
 
-## 安装（3 行）
+The rest of the time your statusline is fully passed through to whatever you had before — zero interference.
+
+## Install (3 lines)
 
 ```
 /plugin marketplace add soulland/goal-kick
@@ -24,64 +26,62 @@
 /goal-kick:setup
 ```
 
-setup 是对话式向导：自动安装依赖（Hammerspoon、Python 运行时、Spoon）、引导注册
-[football-data.org](https://www.football-data.org/client/register) 免费 token、用自然语言选择关注球队、处理 statusline 共存，最后播一次测试动画。
+`setup` is a conversational wizard: installs dependencies (Hammerspoon, Python runtime, Spoon), walks you through a free [football-data.org](https://www.football-data.org/client/register) token, lets you pick teams in natural language, handles statusline coexistence, and offers a test animation at the end. It speaks your language — English, Chinese, whatever you type.
 
-## 命令
+## Commands
 
-| 命令 | 作用 |
+| Command | What it does |
 |---|---|
-| `/goal-kick:setup` | 完整初始化向导 |
-| `/goal-kick:follow 阿根廷和日本` | 增加关注（中文/英文/别名模糊匹配） |
-| `/goal-kick:unfollow 日本` | 取消关注 |
-| `/goal-kick:status` | 关注列表、poller 心跳、近期比分 |
-| `/goal-kick:mute 2h` | 静音（`30m` / `今天` / `off` 均可） |
-| `/goal-kick:test` | 注入伪造进球，播完整动画 |
+| `/goal-kick:setup` | Full onboarding wizard |
+| `/goal-kick:follow argentina, japan` | Follow teams (fuzzy: English/Chinese names, FIFA codes) |
+| `/goal-kick:unfollow japan` | Unfollow |
+| `/goal-kick:status` | Followed teams, poller heartbeat, today's scores |
+| `/goal-kick:mute 2h` | Mute (`30m` / `today` / `off`) |
+| `/goal-kick:test` | Fake a goal for any team you name, play the full show |
 
-## 架构
+## Architecture
 
-三个进程通过 `~/.claude/goal-kick/state.json` 单向通信（契约见 [shared/state-schema.md](shared/state-schema.md)）：
+Three processes communicate one-way through `~/.claude/goal-kick/state.json` (contract: [shared/state-schema.md](shared/state-schema.md)):
 
 ```
-poller(Python 守护进程) ──写──▶ state.json ◀──读── statusline.sh(Claude Code)
-        │ hs -c 调起                  ▲
-        └──────▶ GoalKick.spoon ──读──┘ (Hammerspoon 桌面覆盖层)
+poller (Python daemon) ──write──▶ state.json ◀──read── statusline.sh (Claude Code)
+        │ hs -c                       ▲
+        └────────▶ GoalKick.spoon ──read┘ (Hammerspoon desktop overlay)
 ```
 
-- **poller**：football-data.org 轮询（比赛中 20s / 空闲休眠到开赛前 5 分钟），比分增量判定进球，确定性事件 id 幂等去重，VAR 回滚不误报，断网恢复不补播旧进球
-- **statusline.sh**：单次 awk 渲染约 7ms，远低于 50ms 预算；无事件时透传原 statusline
-- **overlay**：v0.1 用 Hammerspoon；动画数据与渲染分离，v1.0 可整体替换为 Tauri App
+- **poller**: polls football-data.org (20s while a followed match is live / sleeps until 5 min before kickoff otherwise), detects goals by score deltas, deterministic event ids for idempotency, VAR-rollback safe, no replays after network gaps
+- **statusline.sh**: single awk pass, ~7 ms per render (50 ms budget); passes through your existing statusline when idle
+- **overlay**: Hammerspoon for v0.1; all animation data (timeline/palette/sprites) lives in data files, so the renderer is swappable (Tauri planned for v1.0)
 
 ## FAQ
 
-**代理怎么配？**
-国内网络默认走 `http://127.0.0.1:7890`（Clash）。改地址：`~/.claude/goal-kick/venv/bin/python -m goal_poller config set proxy http://127.0.0.1:端口`；直连：`config set proxy ""`。空配置时也尊重 `HTTPS_PROXY`/`HTTP_PROXY` 环境变量。
+**Language?**
+Display language is auto-detected from your system locale (`lang: auto`), override with `~/.claude/goal-kick/venv/bin/python -m goal_poller config set lang en` (or `zh`). Slash commands always reply in the language you use.
 
-**桌面动画不出现？**
-依次检查：① Hammerspoon 在运行且已授予「辅助功能」权限（系统设置 → 隐私与安全性）；② `hs -c "1+1"` 能输出 2（不能则 Hammerspoon 控制台跑一次 `hs.ipc.cliInstall()`）；③ `/goal-kick:test` 看脚本提示。状态栏动画与桌面动画相互独立，桌面侧失败不影响状态栏。
+**Proxy?**
+Direct connection by default; `HTTPS_PROXY`/`HTTP_PROXY` env vars are honored. To pin one: `config set proxy http://127.0.0.1:7890`.
 
-**我已有自己的 statusline 工具怎么办？**
-setup 会检测并询问是否"包装"：你的命令原样保留在 `wrapped_statusline_cmd`，平时输出完全是它的结果，只有进球后的动画/比分窗口期才被接管。
+**Desktop animation doesn't show?**
+Check in order: ① Hammerspoon is running and has Accessibility permission (System Settings → Privacy & Security); ② `hs -c "1+1"` prints 2 (if not, run `hs.ipc.cliInstall()` in the Hammerspoon console once); ③ run `/goal-kick:test` and read the script's hints. The statusline animation is independent and unaffected.
 
-**API 免费档够用吗？**
-football-data.org 免费档约 10 请求/分钟。poller 每轮只发 1 个赛事级请求，比赛中 20 秒一轮（3 次/分钟），空闲时 5 分钟一轮，远低于限额。安装后运行 `python -m goal_poller probe` 实测覆盖与配额。
+**I already have a custom statusline.**
+`setup` detects it and asks to *wrap* it: your command keeps rendering as usual, goal-kick only takes over during the animation/score windows.
 
-> **probe 实测结论（2026-06-12，世界杯开赛次日）**：免费档确认覆盖 2026 世界杯，
-> 赛事 code 为 `WC`，全部 104 场比赛可见，比分实时更新（揭幕战比分已验证）；
-> 进球者需经 `/v4/matches/{id}` 详情接口补查（poller 已实现）。限频实测 10 请求/分钟。
+**Is the free API tier enough?**
+football-data.org free tier allows ~10 requests/min. The poller uses 1 competition-level request per cycle — 3/min during live matches. Verified live (2026-06-12): free tier covers the 2026 World Cup (code `WC`), all 104 matches visible with real-time scores. Limitation: the free tier does **not** expose goalscorer names/minutes (`goals: null`) — the animation gracefully omits the scorer line; a paid tier or an alternative provider (the provider layer is pluggable) lights it up.
 
-**如何卸载？**
-仓库根目录运行 `bash uninstall.sh`：停 poller、还原你原有的 statusline 配置、移除 Spoon 与 init.lua 注册块、删除 `~/.claude/goal-kick`。最后 `/plugin uninstall goal-kick` 移除插件本体。
+**Uninstall?**
+`bash uninstall.sh` from the repo root: stops the poller, restores your original statusline, removes the Spoon and init.lua block, deletes `~/.claude/goal-kick`. Then `/plugin uninstall goal-kick`. The poller also exits by itself after the final on 2026-07-19.
 
-## 开发
+## Development
 
 ```bash
-# poller 测试
+# poller tests
 cd poller && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]" && .venv/bin/pytest
-# overlay 干跑（需 brew install lua）
+# overlay dry-run (needs: brew install lua)
 lua overlay/tests/dryrun.lua
-# 手动触发动画链路
-plugin/scripts/trigger-test.sh
+# trigger the full chain manually (a team is required — no default)
+plugin/scripts/trigger-test.sh --team Argentina --flag 🇦🇷
 ```
 
-里程碑与验收标准见 [goal-kick-开发需求.md](goal-kick-开发需求.md)。MIT License。
+Milestones and acceptance criteria: [goal-kick-开发需求.md](goal-kick-开发需求.md). MIT License.

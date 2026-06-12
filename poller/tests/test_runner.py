@@ -30,6 +30,7 @@ class MockProvider(Provider):
 def setup_cfg():
     cfg = cfgmod.load()
     cfg["api_token"] = "dummy"
+    cfg["lang"] = "zh"          # 测试断言中文展示名，与运行环境 locale 解耦
     cfgmod.add_team(cfg, name_zh="阿根廷", name_en="Argentina", flag="🇦🇷",
                     provider_team_id=762)
     cfgmod.save(cfg)

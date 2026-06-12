@@ -2,7 +2,7 @@
   "name": "goal-kick",
   "displayName": "Goal Kick ⚽",
   "version": "0.1.0",
-  "description": "世界杯进球终端特效：关注球队进球时，像素小人从状态栏跑出，在桌面上射门庆祝，随后状态栏常驻比分。",
+  "description": "World Cup goal effects for your terminal: when your team scores, a pixel runner dashes along your terminal, leaps off its edge onto the desktop and kicks a GOOOAL celebration. 世界杯进球终端特效。",
   "author": {
     "name": "soulland",
     "email": "fodawn2@gmail.com"

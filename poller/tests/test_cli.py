@@ -10,7 +10,7 @@ from goal_poller.paths import config_path
 
 def test_add_search_remove_team(capsys):
     assert main(["config", "add-team", "阿根廷"]) == 0
-    assert "已关注" in capsys.readouterr().out
+    assert "Following" in capsys.readouterr().out
     cfg = json.loads(config_path().read_text())
     assert cfg["followed_teams"][0]["name_en"] == "Argentina"
 
@@ -19,7 +19,7 @@ def test_add_search_remove_team(capsys):
 
     # 别名与模糊匹配
     assert main(["config", "search-team", "南韩"]) == 0
-    assert "韩国" in capsys.readouterr().out
+    assert "South Korea" in capsys.readouterr().out
 
     assert main(["config", "remove-team", "阿根廷"]) == 0
     capsys.readouterr()

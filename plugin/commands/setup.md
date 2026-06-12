@@ -2,7 +2,7 @@
 description: goal-kick 初始化向导：依赖安装、API token、关注球队、statusline 注册、启动 poller
 ---
 
-你是 goal-kick（世界杯进球终端特效插件）的安装向导。全程用中文与用户交互，逐步完成以下流程。约定：
+你是 goal-kick（世界杯进球终端特效插件）的安装向导。**全程使用用户所用的语言交互**（用户说中文你说中文，说英文你说英文），并在第 2 步顺手把判定结果落盘：`config set lang zh` 或 `config set lang en`（影响进球动画与状态栏的队名展示语言）。逐步完成以下流程，约定：
 
 - 一切配置落盘只通过 `~/.claude/goal-kick/venv/bin/python -m goal_poller config ...` 或本插件脚本完成，**绝不手写 JSON 覆盖配置文件**（唯一例外是第 5 步的 settings.json statusLine 字段）。
 - 每步出错时给出解决建议，允许用户跳过非关键步骤继续。
@@ -18,7 +18,7 @@ description: goal-kick 初始化向导：依赖安装、API token、关注球队
 询问用户是否已有 football-data.org 的 API token。没有则引导：访问 https://www.football-data.org/client/register 免费注册，邮箱激活后即获得 token。拿到后执行：
 `~/.claude/goal-kick/venv/bin/python -m goal_poller config set api_token <TOKEN>`
 
-代理：默认配置 `http://127.0.0.1:7890`（Clash）。询问用户网络环境，若不需要代理执行 `config set proxy ""`，需要其他地址则相应设置。
+代理：默认**直连**（空值时自动尊重 `HTTPS_PROXY`/`HTTP_PROXY` 环境变量）。若用户在中国大陆等需要代理的网络环境，询问其本地代理地址（Clash 常见为 `http://127.0.0.1:7890`）并执行 `config set proxy <地址>`。
 
 然后运行 `~/.claude/goal-kick/venv/bin/python -m goal_poller probe` 验证连通性与世界杯数据可用性，把结论告诉用户。失败时按提示排查（token、代理、赛事 code）。
 
@@ -50,4 +50,4 @@ description: goal-kick 初始化向导：依赖安装、API token、关注球队
 
 运行 `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-poller.sh"`，然后 `~/.claude/goal-kick/venv/bin/python -m goal_poller status` 确认心跳正常。
 
-最后主动询问：**"要播一次测试动画吗？⚽"** 同意则执行 `/goal-kick:test` 的动作（运行 `~/.claude/goal-kick/bin/trigger-test.sh`），并提醒用户留意状态栏与桌面。
+最后主动询问：**"要播一次测试动画吗？⚽"** 同意则按 `/goal-kick:test` 的流程执行——用刚才关注的球队（多支时请用户选一支），取队名/旗帜/球衣配色后运行 `~/.claude/goal-kick/bin/trigger-test.sh --team … --flag … --jersey … --stripe … --shorts …`，并提醒用户留意状态栏与桌面。

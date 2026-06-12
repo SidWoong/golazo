@@ -1,25 +1,27 @@
 #!/bin/bash
 # goal-kick 干净卸载：停 poller → 还原用户 statusline → 移除 Spoon/init.lua 注册 → 删数据目录
-# 幂等；任何一步缺失都静默跳过
+# 幂等；任何一步缺失都静默跳过。输出双语：按系统 locale 自动选择中文/英文
 
 set -u
 
 GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
 SETTINGS="$HOME/.claude/settings.json"
 
-step() { printf '\n\033[1;36m▸ %s\033[0m\n' "$1"; }
-ok()   { printf '\033[32m  ✓ %s\033[0m\n' "$1"; }
-warn() { printf '\033[33m  ⚠ %s\033[0m\n' "$1"; }
+case "${LC_ALL:-${LANG:-}}" in zh*) GK_L=zh ;; *) GK_L=en ;; esac
+pick() { if [ "$GK_L" = zh ]; then printf '%s' "$1"; else printf '%s' "$2"; fi; }
+step() { printf '\n\033[1;36m▸ %s\033[0m\n' "$(pick "$1" "$2")"; }
+ok()   { printf '\033[32m  ✓ %s\033[0m\n' "$(pick "$1" "$2")"; }
+warn() { printf '\033[33m  ⚠ %s\033[0m\n' "$(pick "$1" "$2")"; }
 
-step "停止 poller"
+step "停止 poller" "Stopping poller"
 if [ -r "$GK_DIR/poller.pid" ]; then
   pid=$(cat "$GK_DIR/poller.pid" 2>/dev/null)
   if [ -n "$pid" ] && kill "$pid" 2>/dev/null; then
-    ok "已结束进程 $pid"
+    ok "已结束进程 $pid" "Killed process $pid"
   fi
 fi
 
-step "还原 statusline 配置"
+step "还原 statusline 配置" "Restoring statusline config"
 if [ -r "$SETTINGS" ] && command -v jq >/dev/null 2>&1; then
   current=$(jq -r '.statusLine.command // empty' "$SETTINGS" 2>/dev/null)
   case "$current" in
@@ -30,29 +32,32 @@ if [ -r "$SETTINGS" ] && command -v jq >/dev/null 2>&1; then
         # 还原为用户原有 statusline 命令
         jq --arg cmd "$wrapped" '.statusLine = {type: "command", command: $cmd}' \
           "$SETTINGS" > "$tmp" && mv "$tmp" "$SETTINGS"
-        ok "statusLine 已还原为原配置：$wrapped"
+        ok "statusLine 已还原为原配置：$wrapped" "statusLine restored to: $wrapped"
       else
         jq 'del(.statusLine)' "$SETTINGS" > "$tmp" && mv "$tmp" "$SETTINGS"
-        ok "statusLine 已移除（安装前无自定义配置）"
+        ok "statusLine 已移除（安装前无自定义配置）" "statusLine removed (none existed before install)"
       fi
       ;;
-    "") ok "settings 中无 statusLine（无需处理）" ;;
-    *)  ok "statusLine 非 goal-kick 所设（保持不动）" ;;
+    "") ok "settings 中无 statusLine（无需处理）" "No statusLine in settings (nothing to do)" ;;
+    *)  ok "statusLine 非 goal-kick 所设（保持不动）" "statusLine not set by goal-kick (left untouched)" ;;
   esac
 else
-  warn "未找到 jq 或 settings.json，请手动检查 ~/.claude/settings.json 的 statusLine 字段"
+  warn "未找到 jq 或 settings.json，请手动检查 ~/.claude/settings.json 的 statusLine 字段" \
+       "jq or settings.json missing; check the statusLine field in ~/.claude/settings.json manually"
 fi
 
-step "移除 Hammerspoon 组件"
-rm -rf "$HOME/.hammerspoon/Spoons/GoalKick.spoon" && ok "Spoon 已删除"
+step "移除 Hammerspoon 组件" "Removing Hammerspoon components"
+rm -rf "$HOME/.hammerspoon/Spoons/GoalKick.spoon" && ok "Spoon 已删除" "Spoon removed"
 HS_INIT="$HOME/.hammerspoon/init.lua"
 if [ -f "$HS_INIT" ] && grep -qF "goal-kick BEGIN" "$HS_INIT"; then
   sed -i '' '/goal-kick BEGIN/,/goal-kick END/d' "$HS_INIT"
-  ok "init.lua 注册块已移除"
+  ok "init.lua 注册块已移除" "init.lua block removed"
 fi
 
-step "删除数据目录"
-rm -rf "$GK_DIR" && ok "$GK_DIR 已删除"
+step "删除数据目录" "Deleting data directory"
+rm -rf "$GK_DIR" && ok "$GK_DIR 已删除" "$GK_DIR deleted"
 
 echo ""
-echo "卸载完成。如通过插件市场安装，请在 Claude Code 中执行 /plugin uninstall goal-kick"
+pick "卸载完成。如通过插件市场安装，请在 Claude Code 中执行 /plugin uninstall goal-kick" \
+     "Uninstall complete. If installed via marketplace, also run /plugin uninstall goal-kick in Claude Code"
+echo

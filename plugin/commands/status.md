@@ -2,7 +2,7 @@
 description: 查看关注列表、poller 运行状态与近期赛程比分
 ---
 
-执行以下命令并把结果整理成简洁的中文汇报：
+执行以下命令并把结果整理成用户所用语言的简洁汇报：
 
 1. `~/.claude/goal-kick/venv/bin/python -m goal_poller status` —— 关注列表、静音状态、poller 心跳（pid / 上次轮询时间 / 窗口内比赛数）。
 2. 若 poller 心跳缺失或进程不在，提示可运行 `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-poller.sh"` 拉起。

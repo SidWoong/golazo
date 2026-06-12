@@ -68,7 +68,9 @@ class GoalDetector:
         """
         now = time.time() if now is None else now
         last_ok = self._cache["last_ok_poll"]
-        stale = last_ok > 0 and (now - last_ok) > MISSED_WINDOW_SEC
+        # 首次轮询（无历史基线）视同断网恢复：只记录比分不触发事件，
+        # 防止 poller 冷启动把已结束/进行中比赛的存量进球当新进球庆祝
+        stale = last_ok == 0 or (now - last_ok) > MISSED_WINDOW_SEC
         events: list[GoalEvent] = []
 
         for m in matches:

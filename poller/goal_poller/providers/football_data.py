@@ -87,16 +87,16 @@ class FootballDataProvider(Provider):
     def probe(self) -> ProbeResult:
         """验证连通性、token、赛事覆盖与限频信息（供 `python -m goal_poller probe`）。"""
         if not self._token:
-            return ProbeResult(ok=False, detail="未配置 api_token（football-data.org 免费注册后获取）")
+            return ProbeResult(ok=False, detail="api_token not set (register free at football-data.org)")
         try:
             resp = self._client.get(f"/competitions/{self._competition}")
             remaining = resp.headers.get("X-Requests-Available-Minute", "?")
             if resp.status_code == 403:
-                return ProbeResult(ok=False, detail="403：token 无效或免费档不含该赛事",
+                return ProbeResult(ok=False, detail="403: invalid token or competition not in free tier",
                                    rate_limit_remaining=remaining)
             if resp.status_code == 404:
-                return ProbeResult(ok=False, detail=f"404：赛事 code '{self._competition}' 不存在，"
-                                                    "需用 /competitions 端点核对世界杯实际 code",
+                return ProbeResult(ok=False, detail=f"404: competition code '{self._competition}' not found; "
+                                                    "check the /competitions endpoint",
                                    rate_limit_remaining=remaining)
             resp.raise_for_status()
             comp = resp.json()
@@ -105,15 +105,15 @@ class FootballDataProvider(Provider):
             matches = m.json().get("matches", [])
             return ProbeResult(
                 ok=True,
-                detail=f"赛事可用：{comp.get('name')}（{comp.get('code')}），"
-                       f"赛季 {comp.get('currentSeason', {}).get('startDate', '?')} 起，"
-                       f"返回 {len(matches)} 场比赛",
+                detail=f"Competition OK: {comp.get('name')} ({comp.get('code')}), "
+                       f"season from {comp.get('currentSeason', {}).get('startDate', '?')}, "
+                       f"{len(matches)} matches returned",
                 competition=comp.get("code", ""),
                 matches_sampled=len(matches),
                 rate_limit_remaining=m.headers.get("X-Requests-Available-Minute", "?"),
             )
         except httpx.HTTPError as e:
-            return ProbeResult(ok=False, detail=f"网络错误：{e!r}（检查 proxy 配置）")
+            return ProbeResult(ok=False, detail=f"Network error: {e!r} (check proxy settings)")
 
     # ── 内部 ──────────────────────────────────────────────────────
 
