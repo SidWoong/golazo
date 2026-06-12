@@ -33,7 +33,7 @@ The rest of the time your statusline is fully passed through to whatever you had
 | Command                           | What it does |
 |-----------------------------------|---|
 | `/golazo:setup`                   | Full onboarding wizard |
-| `/golazo:follow Argentina, China` | Follow teams (fuzzy & case-insensitive: English/Chinese names, FIFA codes) |
+| `/golazo:follow Argentina, China` | Follow teams (fuzzy & case-insensitive; non-qualified teams like China are politely refused, the rest still added) |
 | `/golazo:unfollow China`          | Unfollow |
 | `/golazo:status`                  | Followed teams, poller heartbeat, today's scores |
 | `/golazo:mute 2h`                 | Mute (`30m` / `today` / `off`) |
@@ -70,6 +70,9 @@ Check in order: ① Hammerspoon is running and has Accessibility permission (Sys
 **Is the free API tier enough?**
 football-data.org free tier allows ~10 requests/min. The poller uses 1 competition-level request per cycle — 3/min during live matches. Verified live (2026-06-12): free tier covers the 2026 World Cup (code `WC`), all 104 matches visible with real-time scores. Limitation: the free tier does **not** expose goalscorer names/minutes (`goals: null`) — the animation gracefully omits the scorer line; a paid tier or an alternative provider (the provider layer is pluggable) lights it up.
 
+**What if a team I follow isn't in the World Cup?**
+E.g. `/golazo:follow Argentina, China`: Argentina is added normally; China isn't on the 48-team whitelist, so it's politely refused with zero config writes.
+
 **Uninstall?**
 `bash uninstall.sh` from the repo root: stops the poller, restores your original statusline, removes the Spoon and init.lua block, deletes `~/.claude/golazo`. Then `/plugin uninstall golazo`. The poller also exits by itself after the final on 2026-07-19.
 
@@ -82,6 +85,6 @@ cd poller && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]" && .venv
 lua overlay/tests/dryrun.lua
 # trigger the full chain manually (defaults to Messi's 108' goal in the 2022 final)
 plugin/scripts/trigger-test.sh
-plugin/scripts/trigger-test.sh --team France --flag 🇯🇵   # or any team
+plugin/scripts/trigger-test.sh --team France --flag 🇫🇷   # or any team
 ```
 
