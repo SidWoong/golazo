@@ -1,4 +1,4 @@
--- goal-kick color palette (pure data; reused as-is by the v1.0 Tauri port)
+-- golazo color palette (pure data; reused as-is by the v1.0 Tauri port)
 -- Colors are { red, green, blue, alpha } with components in 0~1
 return {
   -- primary effect color: gold #f7c948

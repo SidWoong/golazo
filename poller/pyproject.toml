@@ -1,7 +1,7 @@
 [project]
-name = "goal-poller"
+name = "golazo"
 version = "0.1.0"
-description = "goal-kick score-watching daemon: polls scores, detects goals, dispatches effect events"
+description = "golazo score-watching daemon: polls scores, detects goals, dispatches effect events"
 requires-python = ">=3.11"
 dependencies = ["httpx>=0.27"]
 
@@ -13,7 +13,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["goal_poller*"]
+include = ["golazo*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

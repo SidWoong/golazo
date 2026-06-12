@@ -92,7 +92,7 @@ class FootballDataProvider(Provider):
 
     def probe(self) -> ProbeResult:
         """Verify connectivity, the token, competition coverage and rate-limit
-        headroom (backs `python -m goal_poller probe`)."""
+        headroom (backs `python -m golazo probe`)."""
         if not self._token:
             return ProbeResult(ok=False, detail="api_token not set (register free at football-data.org)")
         try:

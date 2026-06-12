@@ -1,10 +1,10 @@
--- GoalKick.spoon dry-run test: steps through the whole animation timeline
+-- Golazo.spoon dry-run test: steps through the whole animation timeline
 -- frame by frame against hs API stubs.
 -- Verifies: play() works in all three fallback modes, every frame renders
 -- without nil errors, and playback auto-stops and destroys the canvas.
 -- Usage: lua overlay/tests/dryrun.lua  (run from the repo root)
 
-local SPOON_DIR = "overlay/GoalKick.spoon/"
+local SPOON_DIR = "overlay/Golazo.spoon/"
 
 -- ── hs API stubs ─────────────────────────────────────────────────────────────
 local clock = 1000.0          -- controlled fake clock

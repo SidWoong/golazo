@@ -126,7 +126,7 @@ def _trigger_overlay() -> bool:
     """Invoke the Spoon via the hs CLI; a missing/failing hs is non-fatal
     (the statusline animation still plays)."""
     try:
-        subprocess.run(["hs", "-c", "spoon.GoalKick:play()"],
+        subprocess.run(["hs", "-c", "spoon.Golazo:play()"],
                        capture_output=True, timeout=10, check=True)
         return True
     except (FileNotFoundError, subprocess.SubprocessError):

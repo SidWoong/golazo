@@ -1,6 +1,6 @@
 """The §5.2 goal-judgement matrix: dedup / VAR rollback safety / no replay after gaps / both-sides scoring."""
-from goal_poller.detector import GoalDetector, MISSED_WINDOW_SEC
-from goal_poller.providers.base import Match
+from golazo.detector import GoalDetector, MISSED_WINDOW_SEC
+from golazo.providers.base import Match
 
 ARG, FRA = 762, 773          # following Argentina; France is the opponent
 FOLLOWED = {ARG}

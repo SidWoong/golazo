@@ -1,10 +1,10 @@
 """Dispatch layer: state.json assembly, the timeline matrix, mute suppression, overlay trigger conditions."""
 import json
 
-from goal_poller import dispatcher
-from goal_poller.detector import GoalEvent
-from goal_poller.paths import state_path
-from goal_poller.providers.base import Match
+from golazo import dispatcher
+from golazo.detector import GoalEvent
+from golazo.paths import state_path
+from golazo.providers.base import Match
 
 
 def mk_event(etype="goal", scoring="home"):

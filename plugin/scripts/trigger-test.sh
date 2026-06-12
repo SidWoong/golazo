@@ -1,5 +1,5 @@
 #!/bin/bash
-# Manually trigger one full goal-effect chain (used by /goal-kick:test and for
+# Manually trigger one full goal-effect chain (used by /golazo:test and for
 # development).
 # Behavior: atomically write a fabricated goal event into state.json → invoke
 # the overlay animation if Hammerspoon is available.
@@ -9,8 +9,8 @@
 
 set -eu
 
-GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
-STATE_FILE="$GK_DIR/state.json"
+GZ_DIR="${GOLAZO_DIR:-$HOME/.claude/golazo}"
+STATE_FILE="$GZ_DIR/state.json"
 
 # Default scene: the 2022 Qatar World Cup final — Messi's 108th-minute goal
 # (Argentina 3-2 France). Team names follow the system locale.
@@ -53,7 +53,7 @@ if [ -n "$JERSEY" ] && [ -n "$STRIPE" ] && [ -n "$SHORTS" ]; then
     \"kit\": { \"jersey\": \"$JERSEY\", \"stripe\": \"$STRIPE\", \"shorts\": \"$SHORTS\" }"
 fi
 
-mkdir -p "$GK_DIR"
+mkdir -p "$GZ_DIR"
 NOW=$(date +%s)
 
 # Timeline matches the goal-type defaults in shared/state-schema.md; the test
@@ -66,7 +66,7 @@ fi
 
 # Atomic write: temp file in the same dir + mv (rename atomicity means readers
 # never see half a JSON)
-TMP=$(mktemp "$GK_DIR/.state.json.XXXXXX")
+TMP=$(mktemp "$GZ_DIR/.state.json.XXXXXX")
 cat > "$TMP" <<EOF
 {
   "schema_version": 1,
@@ -100,10 +100,10 @@ fi
 
 # Invoke the Hammerspoon overlay (the hs CLI is installed via hs.ipc during setup)
 if command -v hs >/dev/null 2>&1; then
-  if hs -c "spoon.GoalKick:play()" >/dev/null 2>&1; then
+  if hs -c "spoon.Golazo:play()" >/dev/null 2>&1; then
     echo "🎬 已调起桌面覆盖层动画。"
   else
-    echo "⚠️  hs CLI 调用失败：请确认 Hammerspoon 正在运行、init.lua 已加载 GoalKick.spoon 并启用 hs.ipc。" >&2
+    echo "⚠️  hs CLI 调用失败：请确认 Hammerspoon 正在运行、init.lua 已加载 Golazo.spoon 并启用 hs.ipc。" >&2
   fi
 else
   echo "⚠️  未找到 hs 命令（Hammerspoon CLI），跳过覆盖层。状态栏动画不受影响。" >&2

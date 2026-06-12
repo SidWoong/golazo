@@ -1,5 +1,5 @@
 #!/bin/bash
-# goal-kick one-shot installer (idempotent, safe to re-run; called from /goal-kick:setup)
+# golazo one-shot installer (idempotent, safe to re-run; called from /golazo:setup)
 # Responsibilities: dependency checks → Python runtime (uv preferred, venv fallback)
 #   → install the poller → copy statusline/trigger scripts to a stable path
 #   → install the Hammerspoon Spoon
@@ -10,12 +10,12 @@
 set -eu
 
 REPO_DIR=$(cd "$(dirname "$0")" && pwd)
-GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
-VENV_DIR="$GK_DIR/venv"
-BIN_DIR="$GK_DIR/bin"
+GZ_DIR="${GOLAZO_DIR:-$HOME/.claude/golazo}"
+VENV_DIR="$GZ_DIR/venv"
+BIN_DIR="$GZ_DIR/bin"
 
-case "${LC_ALL:-${LANG:-}}" in zh*) GK_L=zh ;; *) GK_L=en ;; esac
-pick() { if [ "$GK_L" = zh ]; then printf '%s' "$1"; else printf '%s' "$2"; fi; }
+case "${LC_ALL:-${LANG:-}}" in zh*) GZ_L=zh ;; *) GZ_L=en ;; esac
+pick() { if [ "$GZ_L" = zh ]; then printf '%s' "$1"; else printf '%s' "$2"; fi; }
 step() { printf '\n\033[1;36m▸ %s\033[0m\n' "$(pick "$1" "$2")"; }
 ok()   { printf '\033[32m  ✓ %s\033[0m\n' "$(pick "$1" "$2")"; }
 warn() { printf '\033[33m  ⚠ %s\033[0m\n' "$(pick "$1" "$2")"; }
@@ -44,7 +44,7 @@ else
 fi
 
 step "安装 poller 运行时 → $VENV_DIR" "Installing poller runtime → $VENV_DIR"
-mkdir -p "$GK_DIR" "$BIN_DIR"
+mkdir -p "$GZ_DIR" "$BIN_DIR"
 if command -v uv >/dev/null 2>&1; then
   uv venv --quiet --python "$PYTHON" "$VENV_DIR" 2>/dev/null || true
   uv pip install --quiet --python "$VENV_DIR/bin/python" "$REPO_DIR/poller"
@@ -54,8 +54,8 @@ else
   "$VENV_DIR/bin/pip" install --quiet --upgrade "$REPO_DIR/poller"
   ok "经 venv/pip 安装完成" "Installed via venv/pip"
 fi
-"$VENV_DIR/bin/python" -m goal_poller config get schema_version >/dev/null
-ok "goal_poller CLI 可用" "goal_poller CLI works"
+"$VENV_DIR/bin/python" -m golazo config get schema_version >/dev/null
+ok "golazo CLI 可用" "golazo CLI works"
 
 step "落地脚本到稳定路径 → $BIN_DIR" "Copying scripts to stable path → $BIN_DIR"
 # the command path referenced by settings.json must not drift across plugin
@@ -65,25 +65,25 @@ cp -f "$REPO_DIR/plugin/scripts/trigger-test.sh" "$BIN_DIR/trigger-test.sh"
 chmod +x "$BIN_DIR"/*.sh
 ok "statusline.sh / trigger-test.sh" "statusline.sh / trigger-test.sh"
 
-step "安装 GoalKick.spoon" "Installing GoalKick.spoon"
-SPOON_DST="$HOME/.hammerspoon/Spoons/GoalKick.spoon"
+step "安装 Golazo.spoon" "Installing Golazo.spoon"
+SPOON_DST="$HOME/.hammerspoon/Spoons/Golazo.spoon"
 mkdir -p "$HOME/.hammerspoon/Spoons"
 rm -rf "$SPOON_DST"
-cp -R "$REPO_DIR/overlay/GoalKick.spoon" "$SPOON_DST"
+cp -R "$REPO_DIR/overlay/Golazo.spoon" "$SPOON_DST"
 ok "已拷贝到 $SPOON_DST" "Copied to $SPOON_DST"
 
 HS_INIT="$HOME/.hammerspoon/init.lua"
-MARK_BEGIN="-- goal-kick BEGIN (managed, do not edit)"
-MARK_BEGIN_LEGACY="-- goal-kick BEGIN（自动管理，勿手改）"
+MARK_BEGIN="-- golazo BEGIN (managed, do not edit)"
+MARK_BEGIN_LEGACY="-- golazo BEGIN（自动管理，勿手改）"
 if ! grep -qF -e "$MARK_BEGIN" "$HS_INIT" 2>/dev/null \
    && ! grep -qF -e "$MARK_BEGIN_LEGACY" "$HS_INIT" 2>/dev/null; then
   {
     echo ""
     echo "$MARK_BEGIN"
-    echo 'hs.loadSpoon("GoalKick")'
+    echo 'hs.loadSpoon("Golazo")'
     echo 'require("hs.ipc")'
     echo 'hs.ipc.cliInstall()'
-    echo "-- goal-kick END"
+    echo "-- golazo END"
   } >> "$HS_INIT"
   ok "已在 init.lua 注册 Spoon 与 hs.ipc" "Registered Spoon and hs.ipc in init.lua"
 else
@@ -94,6 +94,6 @@ if [ "$HS_PRESENT" = "1" ]; then
 fi
 
 step "完成" "Done"
-pick "  数据目录：$GK_DIR" "  Data dir: $GK_DIR"; echo
-pick "  后续：在 Claude Code 中运行 /goal-kick:setup 完成 token、球队与 statusline 配置" \
-     "  Next: run /goal-kick:setup in Claude Code to configure token, teams and statusline"; echo
+pick "  数据目录：$GZ_DIR" "  Data dir: $GZ_DIR"; echo
+pick "  后续：在 Claude Code 中运行 /golazo:setup 完成 token、球队与 statusline 配置" \
+     "  Next: run /golazo:setup in Claude Code to configure token, teams and statusline"; echo

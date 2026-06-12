@@ -1,4 +1,4 @@
--- goal-kick pixel-runner frames (pure data; reused as-is by the v1.0 Tauri port)
+-- golazo pixel-runner frames (pure data; reused as-is by the v1.0 Tauri port)
 -- Each frame is a character grid (array of row strings); characters map to
 -- palette keys via `legend`; "." is transparent.
 -- Grid orientation: the runner faces right.

@@ -4,8 +4,8 @@ import time
 
 import pytest
 
-from goal_poller.__main__ import main, parse_mute_expr
-from goal_poller.paths import config_path
+from golazo.__main__ import main, parse_mute_expr
+from golazo.paths import config_path
 
 
 def test_add_search_remove_team(capsys):

@@ -1,10 +1,10 @@
 """run_loop driven by a mock provider: the full chain (poll → detect → dispatch → state.json)."""
 import json
 
-from goal_poller import config as cfgmod
-from goal_poller import runner
-from goal_poller.paths import state_path, status_path
-from goal_poller.providers.base import Match, Provider, Team
+from golazo import config as cfgmod
+from golazo import runner
+from golazo.paths import state_path, status_path
+from golazo.providers.base import Match, Provider, Team
 
 
 class MockProvider(Provider):
@@ -40,7 +40,7 @@ def test_full_chain_goal_to_state(monkeypatch):
     setup_cfg()
     mock = MockProvider([(0, 0), (1, 0), (1, 0)])
     monkeypatch.setattr(runner, "make_provider", lambda cfg: mock)
-    monkeypatch.setattr("goal_poller.dispatcher._trigger_overlay", lambda: True)
+    monkeypatch.setattr("golazo.dispatcher._trigger_overlay", lambda: True)
 
     runner.run_loop(once=True)                 # round 1: establish the 0-0 baseline
     assert not state_path().exists()
@@ -59,7 +59,7 @@ def test_full_chain_goal_to_state(monkeypatch):
 
 
 def test_scorer_enriched_from_match_detail(monkeypatch):
-    from goal_poller.providers.base import GoalDetail
+    from golazo.providers.base import GoalDetail
 
     setup_cfg()
 
@@ -69,7 +69,7 @@ def test_scorer_enriched_from_match_detail(monkeypatch):
 
     mock = WithDetail([(0, 0), (1, 0)])
     monkeypatch.setattr(runner, "make_provider", lambda cfg: mock)
-    monkeypatch.setattr("goal_poller.dispatcher._trigger_overlay", lambda: True)
+    monkeypatch.setattr("golazo.dispatcher._trigger_overlay", lambda: True)
 
     runner.run_loop(once=True)
     runner.run_loop(once=True)
@@ -78,7 +78,7 @@ def test_scorer_enriched_from_match_detail(monkeypatch):
 
 
 def test_scorer_mismatched_team_not_applied(monkeypatch):
-    from goal_poller.providers.base import GoalDetail
+    from golazo.providers.base import GoalDetail
 
     setup_cfg()
 
@@ -89,7 +89,7 @@ def test_scorer_mismatched_team_not_applied(monkeypatch):
 
     mock = WrongTeam([(0, 0), (1, 0)])
     monkeypatch.setattr(runner, "make_provider", lambda cfg: mock)
-    monkeypatch.setattr("goal_poller.dispatcher._trigger_overlay", lambda: True)
+    monkeypatch.setattr("golazo.dispatcher._trigger_overlay", lambda: True)
 
     runner.run_loop(once=True)
     runner.run_loop(once=True)

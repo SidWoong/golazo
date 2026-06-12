@@ -1,6 +1,6 @@
---- === GoalKick ===
---- World Cup goal celebration overlay for the desktop (goal-kick v0.1).
---- Triggered via `hs -c "spoon.GoalKick:play()"`: reads ~/.claude/goal-kick/state.json,
+--- === Golazo ===
+--- World Cup goal celebration overlay for the desktop (golazo v0.1).
+--- Triggered via `hs -c "spoon.Golazo:play()"`: reads ~/.claude/golazo/state.json,
 --- then the runner dashes along the terminal window's bottom edge → leaps out of the
 --- window frame → lands and grows → run-up and shot → GOOOAL confetti → fades out
 --- and destroys itself.
@@ -10,11 +10,11 @@
 local obj = {}
 obj.__index = obj
 
-obj.name = "GoalKick"
+obj.name = "Golazo"
 obj.version = "0.1.0"
-obj.author = "goal-kick"
+obj.author = "golazo"
 obj.license = "MIT"
-obj.homepage = "https://github.com/soulland/goal-kick"
+obj.homepage = "https://github.com/soulland/golazo"
 
 -- Playback state (held while playing; MUST be cleared at the end to avoid leaks)
 obj._canvas = nil
@@ -101,7 +101,7 @@ end
 -- ── state file ──────────────────────────────────────────────────────────────
 
 local function stateDir()
-  return (os.getenv("GOAL_KICK_DIR") or (os.getenv("HOME") .. "/.claude/goal-kick"))
+  return (os.getenv("GOLAZO_DIR") or (os.getenv("HOME") .. "/.claude/golazo"))
 end
 
 local function readState()
@@ -229,7 +229,7 @@ end
 
 -- ── main flow ───────────────────────────────────────────────────────────────
 
---- GoalKick:play()
+--- Golazo:play()
 --- Read state.json and play the full overlay animation. Returns immediately for
 --- non-goal events or events already past their overlay window.
 function obj:play()
@@ -316,14 +316,14 @@ function obj:play()
       self:_renderFrame(t, ctx)
     end)
     if not ok then
-      print("GoalKick render error: " .. tostring(err))
+      print("Golazo render error: " .. tostring(err))
       self:stop()
     end
   end)
   return self
 end
 
---- GoalKick:stop()
+--- Golazo:stop()
 --- Stop playback immediately and destroy every resource (timer, canvas, particles).
 function obj:stop()
   if self._timer then self._timer:stop(); self._timer = nil end

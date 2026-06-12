@@ -1,5 +1,5 @@
 {
-  "description": "goal-kick: keep the goal-watching daemon alive on session start",
+  "description": "golazo: keep the goal-watching daemon alive on session start",
   "hooks": {
     "SessionStart": [
       {

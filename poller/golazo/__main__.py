@@ -1,4 +1,4 @@
-"""CLI entry point: python -m goal_poller <subcommand>
+"""CLI entry point: python -m golazo <subcommand>
 
 Slash commands (plugin/commands/*.md) read/write config exclusively through
 these subcommands — hand-written JSON is forbidden. Output is plain English
@@ -190,7 +190,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 # ── entry point ────────────────────────────────────────────────────────────
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="goal_poller", description="goal-kick goal-watch daemon")
+    p = argparse.ArgumentParser(prog="golazo", description="golazo goal-watch daemon")
     sub = p.add_subparsers(dest="command", required=True)
 
     run_p = sub.add_parser("run", help="run the polling daemon loop")

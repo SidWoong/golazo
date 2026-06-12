@@ -3,10 +3,10 @@
 # Idempotent and quiet (hook output lands in the session context — keep it
 # short); failures never block session startup.
 
-GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
-PID_FILE="$GK_DIR/poller.pid"
-LOG_FILE="$GK_DIR/poller.log"
-CONFIG_FILE="$GK_DIR/config.json"
+GZ_DIR="${GOLAZO_DIR:-$HOME/.claude/golazo}"
+PID_FILE="$GZ_DIR/poller.pid"
+LOG_FILE="$GZ_DIR/poller.log"
+CONFIG_FILE="$GZ_DIR/config.json"
 
 # Setup not completed (no config) → nothing to do
 [ -r "$CONFIG_FILE" ] || exit 0
@@ -27,11 +27,11 @@ fi
 
 # Pick a Python interpreter: the dedicated venv created by install.sh first,
 # the system python3 as a fallback
-PYTHON="$GK_DIR/venv/bin/python"
+PYTHON="$GZ_DIR/venv/bin/python"
 [ -x "$PYTHON" ] || PYTHON=$(command -v python3 || true)
 [ -n "$PYTHON" ] || exit 0
 
-mkdir -p "$GK_DIR"
-nohup "$PYTHON" -m goal_poller run >> "$LOG_FILE" 2>&1 &
+mkdir -p "$GZ_DIR"
+nohup "$PYTHON" -m golazo run >> "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"
-echo "goal-kick: poller 已拉起 (pid $!)"
+echo "golazo: poller 已拉起 (pid $!)"

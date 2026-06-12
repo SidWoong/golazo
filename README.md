@@ -1,4 +1,4 @@
-# goal-kick ⚽
+# golazo ⚽
 
 > Don't miss a single goal from your World Cup team while you code — get told by a pixel runner who dashes out of your Claude Code statusline, leaps onto your desktop, and kicks a GOOOAL celebration.
 
@@ -6,7 +6,7 @@
 
 ![demo](docs/demo.gif)
 
-*↑ Record a GIF via `/goal-kick:test` and replace `docs/demo.gif`*
+*↑ Record a GIF via `/golazo:test` and replace `docs/demo.gif`*
 
 ## What it does
 
@@ -21,9 +21,9 @@ The rest of the time your statusline is fully passed through to whatever you had
 ## Install (3 lines)
 
 ```
-/plugin marketplace add soulland/goal-kick
-/plugin install goal-kick@goal-kick
-/goal-kick:setup
+/plugin marketplace add soulland/golazo
+/plugin install golazo@golazo
+/golazo:setup
 ```
 
 `setup` is a conversational wizard: installs dependencies (Hammerspoon, Python runtime, Spoon), walks you through a free [football-data.org](https://www.football-data.org/client/register) token, lets you pick teams in natural language, handles statusline coexistence, and offers a test animation at the end. It speaks your language — English, Chinese, whatever you type.
@@ -32,21 +32,21 @@ The rest of the time your statusline is fully passed through to whatever you had
 
 | Command | What it does |
 |---|---|
-| `/goal-kick:setup` | Full onboarding wizard |
-| `/goal-kick:follow argentina, japan` | Follow teams (fuzzy: English/Chinese names, FIFA codes) |
-| `/goal-kick:unfollow japan` | Unfollow |
-| `/goal-kick:status` | Followed teams, poller heartbeat, today's scores |
-| `/goal-kick:mute 2h` | Mute (`30m` / `today` / `off`) |
-| `/goal-kick:test` | Fake a goal for any team you name, play the full show |
+| `/golazo:setup` | Full onboarding wizard |
+| `/golazo:follow argentina, japan` | Follow teams (fuzzy: English/Chinese names, FIFA codes) |
+| `/golazo:unfollow japan` | Unfollow |
+| `/golazo:status` | Followed teams, poller heartbeat, today's scores |
+| `/golazo:mute 2h` | Mute (`30m` / `today` / `off`) |
+| `/golazo:test` | Fake a goal for any team you name, play the full show |
 
 ## Architecture
 
-Three processes communicate one-way through `~/.claude/goal-kick/state.json` (contract: [shared/state-schema.md](shared/state-schema.md)):
+Three processes communicate one-way through `~/.claude/golazo/state.json` (contract: [shared/state-schema.md](shared/state-schema.md)):
 
 ```
 poller (Python daemon) ──write──▶ state.json ◀──read── statusline.sh (Claude Code)
         │ hs -c                       ▲
-        └────────▶ GoalKick.spoon ──read┘ (Hammerspoon desktop overlay)
+        └────────▶ Golazo.spoon ──read┘ (Hammerspoon desktop overlay)
 ```
 
 - **poller**: polls football-data.org (20s while a followed match is live / sleeps until 5 min before kickoff otherwise), detects goals by score deltas, deterministic event ids for idempotency, VAR-rollback safe, no replays after network gaps
@@ -56,22 +56,22 @@ poller (Python daemon) ──write──▶ state.json ◀──read── statu
 ## FAQ
 
 **Language?**
-Display language is auto-detected from your system locale (`lang: auto`), override with `~/.claude/goal-kick/venv/bin/python -m goal_poller config set lang en` (or `zh`). Slash commands always reply in the language you use.
+Display language is auto-detected from your system locale (`lang: auto`), override with `~/.claude/golazo/venv/bin/python -m golazo config set lang en` (or `zh`). Slash commands always reply in the language you use.
 
 **Proxy?**
 Direct connection by default; `HTTPS_PROXY`/`HTTP_PROXY` env vars are honored. To pin one: `config set proxy http://127.0.0.1:7890`.
 
 **Desktop animation doesn't show?**
-Check in order: ① Hammerspoon is running and has Accessibility permission (System Settings → Privacy & Security); ② `hs -c "1+1"` prints 2 (if not, run `hs.ipc.cliInstall()` in the Hammerspoon console once); ③ run `/goal-kick:test` and read the script's hints. The statusline animation is independent and unaffected.
+Check in order: ① Hammerspoon is running and has Accessibility permission (System Settings → Privacy & Security); ② `hs -c "1+1"` prints 2 (if not, run `hs.ipc.cliInstall()` in the Hammerspoon console once); ③ run `/golazo:test` and read the script's hints. The statusline animation is independent and unaffected.
 
 **I already have a custom statusline.**
-`setup` detects it and asks to *wrap* it: your command keeps rendering as usual, goal-kick only takes over during the animation/score windows.
+`setup` detects it and asks to *wrap* it: your command keeps rendering as usual, golazo only takes over during the animation/score windows.
 
 **Is the free API tier enough?**
 football-data.org free tier allows ~10 requests/min. The poller uses 1 competition-level request per cycle — 3/min during live matches. Verified live (2026-06-12): free tier covers the 2026 World Cup (code `WC`), all 104 matches visible with real-time scores. Limitation: the free tier does **not** expose goalscorer names/minutes (`goals: null`) — the animation gracefully omits the scorer line; a paid tier or an alternative provider (the provider layer is pluggable) lights it up.
 
 **Uninstall?**
-`bash uninstall.sh` from the repo root: stops the poller, restores your original statusline, removes the Spoon and init.lua block, deletes `~/.claude/goal-kick`. Then `/plugin uninstall goal-kick`. The poller also exits by itself after the final on 2026-07-19.
+`bash uninstall.sh` from the repo root: stops the poller, restores your original statusline, removes the Spoon and init.lua block, deletes `~/.claude/golazo`. Then `/plugin uninstall golazo`. The poller also exits by itself after the final on 2026-07-19.
 
 ## Development
 
@@ -85,4 +85,4 @@ plugin/scripts/trigger-test.sh
 plugin/scripts/trigger-test.sh --team Japan --flag 🇯🇵   # or any team
 ```
 
-Milestones and acceptance criteria: [goal-kick-开发需求.md](goal-kick-开发需求.md). MIT License.
+Milestones and acceptance criteria: [golazo-开发需求.md](golazo-开发需求.md). MIT License.

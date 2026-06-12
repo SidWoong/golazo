@@ -1,7 +1,7 @@
-# goal-kick state-file contract (binding for all three ends)
+# golazo state-file contract (binding for all three ends)
 
 This document is the **single contract** between the poller (writer),
-statusline.sh (reader) and GoalKick.spoon (reader).
+statusline.sh (reader) and Golazo.spoon (reader).
 When any implementation disagrees with this file, this file wins; changing it
 requires re-checking all three ends.
 
@@ -9,11 +9,11 @@ requires re-checking all three ends.
 
 | File | Path | Writer | Readers |
 |---|---|---|---|
-| State file | `~/.claude/goal-kick/state.json` | poller / trigger-test.sh | statusline.sh, GoalKick.spoon |
-| User config | `~/.claude/goal-kick/config.json` | poller CLI (`config` subcommands) | poller; statusline.sh (read-only: `wrapped_statusline_cmd`, `lang`) |
+| State file | `~/.claude/golazo/state.json` | poller / trigger-test.sh | statusline.sh, Golazo.spoon |
+| User config | `~/.claude/golazo/config.json` | poller CLI (`config` subcommands) | poller; statusline.sh (read-only: `wrapped_statusline_cmd`, `lang`) |
 
-The root of all paths can be redirected with the `GOAL_KICK_DIR` env var
-(default `~/.claude/goal-kick`) — used by tests.
+The root of all paths can be redirected with the `GOLAZO_DIR` env var
+(default `~/.claude/golazo`) — used by tests.
 
 ## Write rules
 
@@ -67,7 +67,7 @@ The root of all paths can be redirected with the `GOAL_KICK_DIR` env var
                                         // window edge 1.2s + leap/run-up/shot/GOOOAL/fade)
     "scoreboard_hold": [11.2, 611.2]    // [start, end): statusline scoreboard window
   },
-  "muted_until": 0                      // float epoch seconds. Written via /goal-kick:mute; the poller
+  "muted_until": 0                      // float epoch seconds. Written via /golazo:mute; the poller
                                         // triggers nothing before this time. Readers may ignore it
                                         // (while muted the poller never writes events at all).
 }
@@ -105,11 +105,11 @@ from the timeline** and never decide per type what to play:
      - `opponent_goal`: `⚽ {team} scored… {score}`, dim
      - `var_cancel`: `Goal disallowed by VAR 😤`, dim
   4. otherwise → passthrough mode
-- **GoalKick.spoon**: reads state.json only when invoked via
-  `hs -c "spoon.GoalKick:play()"`; returns immediately when
+- **Golazo.spoon**: reads state.json only when invoked via
+  `hs -c "spoon.Golazo:play()"`; returns immediately when
   `event.type != "goal"` or `elapsed` is already past `overlay_play[1]`.
   The animation's internal clock starts at `overlay_play[0]`; see
-  `overlay/GoalKick.spoon/anim/`.
+  `overlay/Golazo.spoon/anim/`.
 
 ## config.json schema (schema_version = 1)
 
@@ -139,5 +139,5 @@ from the timeline** and never decide per type what to play:
 
 **Write constraint**: apart from statusline.sh reading `wrapped_statusline_cmd`
 and `lang`, config.json must only ever be modified through
-`python -m goal_poller config <subcommand>` — hand-written JSON overwrites are
+`python -m golazo config <subcommand>` — hand-written JSON overwrites are
 forbidden (format-corruption protection).

@@ -2,7 +2,7 @@
 
 config.json is a machine-managed file: apart from statusline.sh reading
 wrapped_statusline_cmd, every mutation must go through
-`python -m goal_poller config <subcommand>` (hand-written JSON risks corruption).
+`python -m golazo config <subcommand>` (hand-written JSON risks corruption).
 Schema: shared/state-schema.md.
 """
 from __future__ import annotations

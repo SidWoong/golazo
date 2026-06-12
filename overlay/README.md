@@ -5,7 +5,7 @@
 ## 结构
 
 ```
-GoalKick.spoon/
+Golazo.spoon/
 ├── init.lua      # 渲染逻辑：窗口定位、三种降级、30fps 帧驱动、资源销毁
 └── anim/         # 纯数据：时间轴/配色/像素帧 —— v1.0 Tauri 移植直接复用
     ├── timeline.lua
@@ -14,17 +14,17 @@ GoalKick.spoon/
 tests/dryrun.lua  # hs API 桩干跑测试：lua overlay/tests/dryrun.lua
 ```
 
-## 安装（/goal-kick:setup 会自动完成）
+## 安装（/golazo:setup 会自动完成）
 
 1. `brew install --cask hammerspoon`，启动并授予「辅助功能」权限
-2. 拷贝 `GoalKick.spoon` 到 `~/.hammerspoon/Spoons/`
+2. 拷贝 `Golazo.spoon` 到 `~/.hammerspoon/Spoons/`
 3. `~/.hammerspoon/init.lua` 中加入：
    ```lua
-   hs.loadSpoon("GoalKick")
+   hs.loadSpoon("Golazo")
    require("hs.ipc")          -- 启用 hs CLI，poller 靠它调起动画
    hs.ipc.cliInstall()
    ```
-4. 重载 Hammerspoon 配置，验证：`hs -c "spoon.GoalKick:play()"`（需 state.json 中有未过期 goal 事件，可先跑 `plugin/scripts/trigger-test.sh`）
+4. 重载 Hammerspoon 配置，验证：`hs -c "spoon.Golazo:play()"`（需 state.json 中有未过期 goal 事件，可先跑 `plugin/scripts/trigger-test.sh`）
 
 ## 行为契约
 

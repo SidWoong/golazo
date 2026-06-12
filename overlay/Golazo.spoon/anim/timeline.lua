@@ -1,4 +1,4 @@
--- goal-kick overlay animation timeline (pure data; reused as-is by the v1.0 Tauri port)
+-- golazo overlay animation timeline (pure data; reused as-is by the v1.0 Tauri port)
 -- All times are "overlay-internal seconds": 0 = state.json timeline.overlay_play[1]
 -- (i.e. the handoff moment).
 -- All coordinates are fractions (0~1) of the target screen; the renderer maps to pixels.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# goal-kick statusline renderer
+# golazo statusline renderer
 # Input: the session JSON Claude Code pipes to stdin; output: one statusline
 # row (ANSI 256-color).
 # Three modes: animation/scoreboard (when state.json's timeline matches) →
@@ -7,9 +7,9 @@
 # Performance contract: must return within 50ms, no network requests. The main
 # rendering is a single awk invocation.
 
-GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
-STATE_FILE="$GK_DIR/state.json"
-CONFIG_FILE="$GK_DIR/config.json"
+GZ_DIR="${GOLAZO_DIR:-$HOME/.claude/golazo}"
+STATE_FILE="$GZ_DIR/state.json"
+CONFIG_FILE="$GZ_DIR/config.json"
 
 # stdin must be drained up front: the animation mode never uses it, but
 # passthrough mode forwards it verbatim to the wrapped command
@@ -19,11 +19,11 @@ now=$(date +%s)
 
 # Display language: an explicit config.lang wins; auto/missing falls back to
 # the system locale
-gk_lang=""
-[ -r "$CONFIG_FILE" ] && gk_lang=$(sed -n 's/.*"lang"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CONFIG_FILE" | head -1)
-case "$gk_lang" in
+gz_lang=""
+[ -r "$CONFIG_FILE" ] && gz_lang=$(sed -n 's/.*"lang"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CONFIG_FILE" | head -1)
+case "$gz_lang" in
   zh|en) ;;
-  *) case "${LC_ALL:-${LANG:-}}" in zh*) gk_lang=zh ;; *) gk_lang=en ;; esac ;;
+  *) case "${LC_ALL:-${LANG:-}}" in zh*) gz_lang=zh ;; *) gz_lang=en ;; esac ;;
 esac
 
 # ── Mode 1: timeline rendering from state.json ───────────────────────────────
@@ -31,7 +31,7 @@ esac
 # order/line layout) → timeline branch → output. Prints nothing when no window
 # matches, handing over to the passthrough logic below.
 if [ -r "$STATE_FILE" ]; then
-  rendered=$(awk -v now="$now" -v cols="$cols" -v lang="$gk_lang" '
+  rendered=$(awk -v now="$now" -v cols="$cols" -v lang="$gz_lang" '
     { buf = buf $0 " " }
 
     # extract a string field: "key": "value" (values must not contain double

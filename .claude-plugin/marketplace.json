@@ -1,13 +1,13 @@
 {
-  "name": "goal-kick",
+  "name": "golazo",
   "owner": {
     "name": "soulland",
     "email": "fodawn2@gmail.com"
   },
-  "description": "goal-kick marketplace: World Cup goal effects for your terminal",
+  "description": "golazo marketplace: World Cup goal effects for your terminal",
   "plugins": [
     {
-      "name": "goal-kick",
+      "name": "golazo",
       "source": "./plugin",
       "description": "When your World Cup team scores, a pixel runner leaps out of your terminal and kicks a GOOOAL celebration on your desktop (macOS + Hammerspoon). 世界杯进球终端特效。"
     }
