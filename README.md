@@ -33,8 +33,8 @@ The rest of the time your statusline is fully passed through to whatever you had
 | Command | What it does |
 |---|---|
 | `/golazo:setup` | Full onboarding wizard |
-| `/golazo:follow argentina, japan` | Follow teams (fuzzy: English/Chinese names, FIFA codes) |
-| `/golazo:unfollow japan` | Unfollow |
+| `/golazo:follow Argentina, Japan` | Follow teams (fuzzy & case-insensitive: English/Chinese names, FIFA codes) |
+| `/golazo:unfollow Japan` | Unfollow |
 | `/golazo:status` | Followed teams, poller heartbeat, today's scores |
 | `/golazo:mute 2h` | Mute (`30m` / `today` / `off`) |
 | `/golazo:test` | Fake a goal for any team you name, play the full show |
