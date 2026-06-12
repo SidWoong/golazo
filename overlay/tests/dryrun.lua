@@ -62,7 +62,11 @@ math.randomseed(42)
 -- ── 用例 ────────────────────────────────────────────────────────────────────
 local function makeWin(fullscreen)
   return {
-    application = function() return { name = function() return "iTerm2" end } end,
+    -- 模拟中文系统：应用名本地化（「终端」），bundle ID 不变 —— 验证 bundle 优先匹配
+    application = function() return {
+      name = function() return "终端" end,
+      bundleID = function() return "com.apple.Terminal" end,
+    } end,
     isStandard = function() return true end,
     isFullScreen = function() return fullscreen end,
     screen = function() return screenStub end,

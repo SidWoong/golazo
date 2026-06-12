@@ -21,13 +21,34 @@ obj._confetti = nil
 
 local TL, PAL, SPR   -- anim/ 数据，init() 时加载
 
--- 可作为"终端宿主"的应用名（hs.window:application():name()）
-local HOST_APPS = {
-  ["Terminal"] = true, ["iTerm2"] = true, ["Warp"] = true, ["kitty"] = true,
-  ["Alacritty"] = true, ["Ghostty"] = true, ["WezTerm"] = true, ["Hyper"] = true,
-  ["Code"] = true, ["Visual Studio Code"] = true, ["Cursor"] = true,
-  ["PyCharm"] = true, ["IntelliJ IDEA"] = true, ["WebStorm"] = true, ["GoLand"] = true,
+-- 可作为"终端宿主"的应用：优先按 bundle ID 匹配（不随系统语言本地化，
+-- 如中文系统里 Terminal.app 显示名为「终端」），应用名仅作回退
+local HOST_BUNDLES = {
+  ["com.apple.Terminal"] = true, ["com.googlecode.iterm2"] = true,
+  ["dev.warp.Warp-Stable"] = true, ["net.kovidgoyal.kitty"] = true,
+  ["org.alacritty"] = true, ["io.alacritty"] = true,
+  ["com.mitchellh.ghostty"] = true, ["com.github.wez.wezterm"] = true,
+  ["co.zeit.hyper"] = true, ["com.microsoft.VSCode"] = true,
+  ["com.jetbrains.pycharm"] = true, ["com.jetbrains.pycharm.ce"] = true,
+  ["com.jetbrains.intellij"] = true, ["com.jetbrains.intellij.ce"] = true,
+  ["com.jetbrains.WebStorm"] = true, ["com.jetbrains.goland"] = true,
 }
+local HOST_APPS = {
+  ["Terminal"] = true, ["终端"] = true, ["iTerm2"] = true, ["Warp"] = true,
+  ["kitty"] = true, ["Alacritty"] = true, ["Ghostty"] = true, ["WezTerm"] = true,
+  ["Hyper"] = true, ["Code"] = true, ["Visual Studio Code"] = true,
+  ["Cursor"] = true, ["PyCharm"] = true, ["IntelliJ IDEA"] = true,
+  ["WebStorm"] = true, ["GoLand"] = true,
+}
+
+-- 窗口所属应用是否为终端宿主
+local function isHostWindow(w)
+  local app = w and w:application()
+  if not app then return false end
+  local bid = app:bundleID()
+  if bid and HOST_BUNDLES[bid] then return true end
+  return HOST_APPS[app:name()] or false
+end
 
 -- 缓动函数实现：anim/ 数据中以名字引用
 local EASING = {
@@ -77,10 +98,10 @@ end
 
 local function locateStage()
   local win = hs.window.focusedWindow()
-  if not win or not win:application() or not HOST_APPS[win:application():name()] then
+  if not isHostWindow(win) then
     win = nil
     for _, w in ipairs(hs.window.orderedWindows()) do
-      if w:application() and HOST_APPS[w:application():name()] and w:isStandard() then
+      if isHostWindow(w) and w:isStandard() then
         win = w
         break
       end
