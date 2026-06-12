@@ -41,13 +41,19 @@
     "score": "2-1",                     // string，必填。恒为「关注球队得分-对手得分」视角
     "scorer": "梅西",                    // string，可为空串（数据源未提供时）
     "minute": 78,                       // int，可为 0（未知）
-    "ts": 1781234567.0                  // float，必填。事件触发时刻 epoch 秒
+    "ts": 1781234567.0,                 // float，必填。事件触发时刻 epoch 秒
+    "kit": {                            // 可选。进球队主场球衣三色，overlay 给小人换装；
+      "jersey": "#74acdf",              // 缺省或非法时读取方回退默认配色
+      "stripe": "#ffffff",
+      "shorts": "#1a1a2e"
+    }
   },
   "timeline": {                         // 相对 event.ts 的秒数；由写入方按事件类型生成，读取方只管执行
     "statusline_run": [0.0, 3.0],       // [start, end)：状态栏小人助跑动画窗口
     "handoff": 3.0,                     // 交接瞬间：状态栏小人消失、覆盖层小人出现
-    "overlay_play": [3.0, 10.0],        // [start, end)：桌面覆盖层动画窗口
-    "scoreboard_hold": [10.0, 610.0]    // [start, end)：状态栏常驻比分窗口
+    "overlay_play": [3.0, 11.2],        // [start, end)：桌面覆盖层动画窗口（8.2s，
+                                        // 含沿窗口底边跑动 1.2s + 跃出/助跑/射门/GOOOAL/淡出）
+    "scoreboard_hold": [11.2, 611.2]    // [start, end)：状态栏常驻比分窗口
   },
   "muted_until": 0                      // float epoch 秒。/goal-kick:mute 写入；poller 在此时间前不触发任何动画。
                                         // 读取方无需检查此字段（静音时 poller 根本不写事件）。
@@ -60,7 +66,7 @@
 
 | type | statusline_run | handoff | overlay_play | scoreboard_hold | 说明 |
 |---|---|---|---|---|---|
-| `goal` | `[0, 3]` | `3` | `[3, 10]` | `[10, 10 + hold_min*60]` | 完整庆祝链路 |
+| `goal` | `[0, 3]` | `3` | `[3, 11.2]` | `[11.2, 11.2 + hold_min*60]` | 完整庆祝链路 |
 | `goal`（overlay_enabled=false） | `[0, 3]` | `3` | `[3, 3]`（零长） | `[3, 3 + hold_min*60]` | 跳过覆盖层 |
 | `opponent_goal` | `[0, 0]`（零长） | `0` | `[0, 0]` | `[0, 90]` | 灰色一行，90 秒 |
 | `var_cancel` | `[0, 0]` | `0` | `[0, 0]` | `[0, 90]` | `进球被 VAR 取消 😤` |

@@ -32,9 +32,10 @@ end
 local fakeState = {
   schema_version = 1,
   event = { id = "test-1", type = "goal", team = "阿根廷", team_flag = "🇦🇷",
-            opponent = "法国", score = "2-1", scorer = "梅西", minute = 78, ts = nil },
+            opponent = "法国", score = "2-1", scorer = "梅西", minute = 78, ts = nil,
+            kit = { jersey = "#74acdf", stripe = "#ffffff", shorts = "#1a1a2e" } },
   timeline = { statusline_run = { 0, 3 }, handoff = 3,
-               overlay_play = { 3, 10 }, scoreboard_hold = { 10, 610 } },
+               overlay_play = { 3, 11.2 }, scoreboard_hold = { 11.2, 611.2 } },
   muted_until = 0,
 }
 
@@ -94,7 +95,7 @@ for _, sc in ipairs(scenarios) do
 
   -- 以 30fps 推进 7.5 秒（超出 total=7.0，验证自动收尾）
   local frames = 0
-  for _ = 1, math.floor(7.5 * 30) do
+  for _ = 1, math.floor(8.7 * 30) do
     if not tickFn then break end
     clock = clock + 1 / 30
     tickFn()
@@ -126,7 +127,7 @@ focusedWin = makeWin(false)
 for i = 1, 5 do
   fakeState.event.ts = clock - 3
   obj:play()
-  for _ = 1, math.floor(7.5 * 30) do
+  for _ = 1, math.floor(8.7 * 30) do
     if not tickFn then break end
     clock = clock + 1 / 30
     tickFn()

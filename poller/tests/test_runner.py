@@ -57,6 +57,45 @@ def test_full_chain_goal_to_state(monkeypatch):
     assert hb["state"] == "live_polling" and hb["matches_in_window"] == 1
 
 
+def test_scorer_enriched_from_match_detail(monkeypatch):
+    from goal_poller.providers.base import GoalDetail
+
+    setup_cfg()
+
+    class WithDetail(MockProvider):
+        def last_goal(self, match_id):
+            return GoalDetail(scorer="Lionel Messi", minute=78, team_id=762)
+
+    mock = WithDetail([(0, 0), (1, 0)])
+    monkeypatch.setattr(runner, "make_provider", lambda cfg: mock)
+    monkeypatch.setattr("goal_poller.dispatcher._trigger_overlay", lambda: True)
+
+    runner.run_loop(once=True)
+    runner.run_loop(once=True)
+    st = json.loads(state_path().read_text())
+    assert st["event"]["scorer"] == "Lionel Messi" and st["event"]["minute"] == 78
+
+
+def test_scorer_mismatched_team_not_applied(monkeypatch):
+    from goal_poller.providers.base import GoalDetail
+
+    setup_cfg()
+
+    class WrongTeam(MockProvider):
+        def last_goal(self, match_id):
+            # 详情接口返回的最近进球属于对手（数据滞后）→ 不得错配到本队进球
+            return GoalDetail(scorer="Kylian Mbappé", minute=80, team_id=773)
+
+    mock = WrongTeam([(0, 0), (1, 0)])
+    monkeypatch.setattr(runner, "make_provider", lambda cfg: mock)
+    monkeypatch.setattr("goal_poller.dispatcher._trigger_overlay", lambda: True)
+
+    runner.run_loop(once=True)
+    runner.run_loop(once=True)
+    st = json.loads(state_path().read_text())
+    assert st["event"]["scorer"] == ""
+
+
 def test_backoff_on_provider_error(monkeypatch):
     setup_cfg()
 

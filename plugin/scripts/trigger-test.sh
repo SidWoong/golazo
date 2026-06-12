@@ -9,6 +9,7 @@ GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
 STATE_FILE="$GK_DIR/state.json"
 
 TEAM="阿根廷"; FLAG="🇦🇷"; OPPONENT="法国"; SCORE="2-1"; SCORER="梅西"; MINUTE=78
+JERSEY="#74acdf"; STRIPE="#ffffff"; SHORTS="#1a1a2e"   # 默认阿根廷主场球衣
 NO_OVERLAY=0
 
 while [ $# -gt 0 ]; do
@@ -19,6 +20,9 @@ while [ $# -gt 0 ]; do
     --score)    SCORE="$2"; shift 2 ;;
     --scorer)   SCORER="$2"; shift 2 ;;
     --minute)   MINUTE="$2"; shift 2 ;;
+    --jersey)   JERSEY="$2"; shift 2 ;;
+    --stripe)   STRIPE="$2"; shift 2 ;;
+    --shorts)   SHORTS="$2"; shift 2 ;;
     --no-overlay) NO_OVERLAY=1; shift ;;
     *) echo "未知参数: $1" >&2; exit 2 ;;
   esac
@@ -31,7 +35,7 @@ NOW=$(date +%s)
 if [ "$NO_OVERLAY" -eq 1 ]; then
   OV_END=3.0; HOLD_START=3.0; HOLD_END=123.0
 else
-  OV_END=10.0; HOLD_START=10.0; HOLD_END=130.0
+  OV_END=11.2; HOLD_START=11.2; HOLD_END=131.2
 fi
 
 # 原子写：同目录临时文件 + mv 覆盖（rename 原子性保证读取方不见半个 JSON）
@@ -48,7 +52,8 @@ cat > "$TMP" <<EOF
     "score": "$SCORE",
     "scorer": "$SCORER",
     "minute": $MINUTE,
-    "ts": $NOW.0
+    "ts": $NOW.0,
+    "kit": { "jersey": "$JERSEY", "stripe": "$STRIPE", "shorts": "$SHORTS" }
   },
   "timeline": {
     "statusline_run": [0.0, 3.0],

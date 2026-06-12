@@ -30,8 +30,19 @@ def test_goal_state_and_timeline():
     assert ev["opponent"] == "法国"          # 静态表解析非关注队中文名
     assert ev["score"] == "2-1" and ev["scorer"] == "梅西" and ev["minute"] == 78
     assert tl["statusline_run"] == [0.0, 3.0] and tl["handoff"] == 3.0
-    assert tl["overlay_play"] == [3.0, 10.0]
-    assert tl["scoreboard_hold"] == [10.0, 610.0]   # 10 分钟常驻
+    assert tl["overlay_play"] == [3.0, 11.2]
+    assert tl["scoreboard_hold"] == [11.2, 611.2]   # 10 分钟常驻
+
+
+def test_goal_event_carries_team_kit():
+    st = dispatcher.build_state(mk_event(), base_cfg())
+    assert st["event"]["kit"] == {"jersey": "#74acdf", "stripe": "#ffffff",
+                                  "shorts": "#1a1a2e"}   # 阿根廷主场
+
+
+def test_opponent_goal_has_no_kit():
+    st = dispatcher.build_state(mk_event("opponent_goal", "away"), base_cfg())
+    assert "kit" not in st["event"]
 
 
 def test_overlay_disabled_timeline_collapses():

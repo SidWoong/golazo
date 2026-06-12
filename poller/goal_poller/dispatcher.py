@@ -15,7 +15,7 @@ from .paths import log_path, state_path
 
 # 时间轴常量（秒），与 state-schema.md 对齐
 RUN_DUR = 3.0
-OVERLAY_DUR = 7.0
+OVERLAY_DUR = 8.2
 NOTICE_HOLD = 90.0      # opponent_goal / var_cancel 的提示时长
 
 
@@ -64,19 +64,26 @@ def build_state(ge: GoalEvent, cfg: dict) -> dict:
             "scoreboard_hold": [0.0, NOTICE_HOLD],
         }
 
+    event = {
+        "id": ge.event_id,
+        "type": ge.type,
+        "team": team_zh,
+        "team_flag": flag,
+        "opponent": opp_zh,
+        "score": f"{f_score}-{o_score}",
+        "scorer": m.scorer,
+        "minute": m.minute,
+        "ts": ge.ts,
+    }
+    # 进球庆祝时给小人穿上进球队的主场球衣（可选字段，读取方缺省回退默认配色）
+    if ge.type == "goal":
+        kit = teams.kit_for(teams.match_api_name(followed_name))
+        if kit:
+            event["kit"] = kit
+
     return {
         "schema_version": 1,
-        "event": {
-            "id": ge.event_id,
-            "type": ge.type,
-            "team": team_zh,
-            "team_flag": flag,
-            "opponent": opp_zh,
-            "score": f"{f_score}-{o_score}",
-            "scorer": m.scorer,
-            "minute": m.minute,
-            "ts": ge.ts,
-        },
+        "event": event,
         "timeline": timeline,
         "muted_until": float(cfg.get("muted_until", 0)),
     }

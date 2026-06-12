@@ -9,7 +9,7 @@ import datetime as dt
 
 import httpx
 
-from .base import Match, ProbeResult, Provider, Team
+from .base import GoalDetail, Match, ProbeResult, Provider, Team
 
 BASE_URL = "https://api.football-data.org/v4"
 COMPETITION = "WC"
@@ -61,6 +61,26 @@ class FootballDataProvider(Provider):
                 continue
             out.append(self._to_match(m))
         return out
+
+    def last_goal(self, match_id: int) -> GoalDetail | None:
+        """比赛详情接口的 goals[] 取最近一粒进球（进球者英文名、分钟、进球方）。
+
+        每粒进球只多花 1 个请求，远在免费档限频内。
+        """
+        try:
+            data = self._get(f"/matches/{match_id}")
+        except httpx.HTTPError:
+            return None
+        goals = data.get("goals") or []
+        if not goals:
+            return None
+        g = goals[-1]
+        minute = g.get("minute")
+        return GoalDetail(
+            scorer=(g.get("scorer") or {}).get("name", "") or "",
+            minute=int(minute) if isinstance(minute, int) else 0,
+            team_id=(g.get("team") or {}).get("id", 0),
+        )
 
     # ── probe ──────────────────────────────────────────────────────
 
