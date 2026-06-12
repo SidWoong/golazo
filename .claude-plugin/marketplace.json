@@ -1,0 +1,15 @@
+{
+  "name": "goal-kick",
+  "owner": {
+    "name": "soulland",
+    "email": "fodawn2@gmail.com"
+  },
+  "description": "goal-kick 自建插件市场：世界杯进球终端特效",
+  "plugins": [
+    {
+      "name": "goal-kick",
+      "source": "./plugin",
+      "description": "世界杯进球时，像素小人从状态栏跑出、在桌面射门庆祝，随后状态栏常驻比分（macOS + Hammerspoon）"
+    }
+  ]
+}
