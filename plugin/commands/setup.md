@@ -9,7 +9,7 @@ You are the setup wizard for golazo (the World Cup terminal goal-effects plugin)
 
 ### Step 1: base installation (idempotent)
 
-Run `bash "${CLAUDE_PLUGIN_ROOT}/../install.sh"`. It checks Python 3.11+ and Hammerspoon, creates the poller runtime, installs Golazo.spoon and registers hs.ipc.
+Run `bash "${CLAUDE_PLUGIN_ROOT}/install.sh"`. It checks Python 3.11+ and Hammerspoon, creates the poller runtime, installs Golazo.spoon and registers hs.ipc.
 
 - If Hammerspoon is missing: ask whether to install it now (`brew install --cask hammerspoon`); after installing, remind the user to launch it once and grant permission under **System Settings → Privacy & Security → Accessibility**, then re-run install.sh. If the user declines, continue (statusline animation only, no desktop effects) and run `... config set overlay_enabled false`.
 
@@ -48,6 +48,6 @@ What to write into `~/.claude/settings.json` (preserve all other fields):
 
 ### Step 5: start the poller and wrap up
 
-Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-poller.sh"`, then `~/.claude/golazo/venv/bin/python -m golazo status` to confirm the heartbeat.
+Run `bash "${CLAUDE_PLUGIN_ROOT}/plugin/scripts/ensure-poller.sh"`, then `~/.claude/golazo/venv/bin/python -m golazo status` to confirm the heartbeat.
 
 Finally, proactively ask: **"Want to play a test animation? ⚽"** If yes, run `~/.claude/golazo/bin/trigger-test.sh` (it re-enacts Messi's extra-time goal in the 2022 final by default) and tell the user to watch the statusline and the desktop.

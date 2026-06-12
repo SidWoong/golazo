@@ -15,7 +15,8 @@
     "fun",
     "macos"
   ],
-  "hooks": "./hooks/hooks.json",
+  "hooks": "./plugin/hooks/hooks.json",
   "homepage": "https://github.com/SidWoong/golazo",
-  "repository": "https://github.com/SidWoong/golazo"
+  "repository": "https://github.com/SidWoong/golazo",
+  "commands": "./plugin/commands"
 }

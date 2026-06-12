@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "golazo",
-      "source": "./plugin",
+      "source": "./",
       "description": "When your World Cup team scores, a pixel runner leaps out of your terminal and kicks a GOOOAL celebration on your desktop (macOS + Hammerspoon). 世界杯进球终端特效。"
     }
   ]
