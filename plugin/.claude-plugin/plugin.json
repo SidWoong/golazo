@@ -4,10 +4,18 @@
   "version": "0.1.0",
   "description": "World Cup goal effects for your terminal: when your team scores, a pixel runner dashes along your terminal, leaps off its edge onto the desktop and kicks a GOOOAL celebration. 世界杯进球终端特效。",
   "author": {
-    "name": "soulland",
+    "name": "SidWoong",
     "email": "fodawn2@gmail.com"
   },
   "license": "MIT",
-  "keywords": ["world-cup", "football", "statusline", "fun", "macos"],
-  "hooks": "./hooks/hooks.json"
+  "keywords": [
+    "world-cup",
+    "football",
+    "statusline",
+    "fun",
+    "macos"
+  ],
+  "hooks": "./hooks/hooks.json",
+  "homepage": "https://github.com/SidWoong/golazo",
+  "repository": "https://github.com/SidWoong/golazo"
 }

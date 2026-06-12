@@ -14,7 +14,7 @@ obj.name = "Golazo"
 obj.version = "0.1.0"
 obj.author = "golazo"
 obj.license = "MIT"
-obj.homepage = "https://github.com/soulland/golazo"
+obj.homepage = "https://github.com/SidWoong/golazo"
 
 -- Playback state (held while playing; MUST be cleared at the end to avoid leaks)
 obj._canvas = nil

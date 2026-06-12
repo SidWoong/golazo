@@ -21,7 +21,7 @@ The rest of the time your statusline is fully passed through to whatever you had
 ## Install (3 lines)
 
 ```
-/plugin marketplace add soulland/golazo
+/plugin marketplace add SidWoong/golazo
 /plugin install golazo@golazo
 /golazo:setup
 ```
