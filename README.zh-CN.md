@@ -91,4 +91,3 @@ plugin/scripts/trigger-test.sh
 plugin/scripts/trigger-test.sh --team 法国 --flag 🇯🇵   # 或任意球队
 ```
 
-里程碑与验收标准见 [golazo-开发需求.md](golazo-开发需求.md)。MIT License。

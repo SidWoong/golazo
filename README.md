@@ -30,14 +30,14 @@ The rest of the time your statusline is fully passed through to whatever you had
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `/golazo:setup` | Full onboarding wizard |
-| `/golazo:follow Argentina, Japan` | Follow teams (fuzzy & case-insensitive: English/Chinese names, FIFA codes) |
-| `/golazo:unfollow Japan` | Unfollow |
-| `/golazo:status` | Followed teams, poller heartbeat, today's scores |
-| `/golazo:mute 2h` | Mute (`30m` / `today` / `off`) |
-| `/golazo:test` | Fake a goal for any team you name, play the full show |
+| Command                           | What it does |
+|-----------------------------------|---|
+| `/golazo:setup`                   | Full onboarding wizard |
+| `/golazo:follow Argentina, China` | Follow teams (fuzzy & case-insensitive: English/Chinese names, FIFA codes) |
+| `/golazo:unfollow China`          | Unfollow |
+| `/golazo:status`                  | Followed teams, poller heartbeat, today's scores |
+| `/golazo:mute 2h`                 | Mute (`30m` / `today` / `off`) |
+| `/golazo:test`                    | Fake a goal for any team you name, play the full show |
 
 ## Architecture
 
@@ -82,7 +82,6 @@ cd poller && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]" && .venv
 lua overlay/tests/dryrun.lua
 # trigger the full chain manually (defaults to Messi's 108' goal in the 2022 final)
 plugin/scripts/trigger-test.sh
-plugin/scripts/trigger-test.sh --team Japan --flag 🇯🇵   # or any team
+plugin/scripts/trigger-test.sh --team France --flag 🇯🇵   # or any team
 ```
 
-Milestones and acceptance criteria: [golazo-开发需求.md](golazo-开发需求.md). MIT License.
