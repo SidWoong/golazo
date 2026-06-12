@@ -7,6 +7,7 @@ Schema: shared/state-schema.md.
 """
 from __future__ import annotations
 
+import copy
 import json
 import os
 import tempfile
@@ -57,7 +58,9 @@ def atomic_write_json(path: Path, data: dict) -> None:
 
 def load() -> dict[str, Any]:
     """Load config, filling in defaults; a missing/corrupt file yields pure defaults."""
-    cfg = dict(DEFAULTS)
+    # Deep copy: a shallow dict(DEFAULTS) would alias the followed_teams list,
+    # so mutations through a loaded cfg would corrupt the process-wide defaults
+    cfg = copy.deepcopy(DEFAULTS)
     try:
         on_disk = json.loads(config_path().read_text(encoding="utf-8"))
         if isinstance(on_disk, dict):

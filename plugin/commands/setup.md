@@ -50,4 +50,4 @@ What to write into `~/.claude/settings.json` (preserve all other fields):
 
 Run `bash "${CLAUDE_PLUGIN_ROOT}/plugin/scripts/ensure-poller.sh"`, then `~/.claude/golazo/venv/bin/python -m golazo status` to confirm the heartbeat.
 
-Finally, proactively ask: **"Want to play a test animation? ⚽"** If yes, run `~/.claude/golazo/bin/trigger-test.sh` (it re-enacts Messi's extra-time goal in the 2022 final by default) and tell the user to watch the statusline and the desktop.
+Finally, proactively ask: **"Want to play a test animation? ⚽"** If yes, run `~/.claude/golazo/venv/bin/python -m golazo test-run` (drives the real pipeline with a mock API; defaults to the teams just followed) and tell the user to watch the statusline and the desktop.

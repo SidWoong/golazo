@@ -187,6 +187,68 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_test_run(args: argparse.Namespace) -> int:
+    """Simulate a live goal through the REAL pipeline; only the API is mocked.
+
+    Round 1 establishes the score baseline, then after --delay seconds the
+    mock API "returns" a goal; detection, dedup, dispatch, the atomic
+    state.json write and the overlay invocation all run production code.
+    """
+    from .detector import GoalDetector
+    from .dispatcher import dispatch
+    from .providers.mock import MockProvider
+    from .runner import _enrich_scorer
+
+    cfg = cfgmod.load()
+
+    # Team pick: --team keyword > first followed team > Argentina (2022-final scene)
+    entry = None
+    if args.team:
+        hits = teams.search(args.team)
+        if not hits:
+            print(f"No 2026 World Cup team matches '{args.team}'.")
+            return 1
+        if len(hits) > 1:
+            print(f"'{args.team}' matches multiple teams; be more specific:")
+            for t in hits:
+                print(f"  {t['flag']} {t['name_zh']} / {t['name_en']}")
+            return 2
+        entry = hits[0]
+    elif cfg["followed_teams"]:
+        entry = teams.match_api_name(cfg["followed_teams"][0].get("name_en", ""))
+
+    if entry is None:
+        # nothing followed and no --team: re-enact Messi's 108' in the 2022 final
+        entry = next(t for t in teams.TEAMS_WC2026 if t["tla"] == "ARG")
+        steps, minute, scorer = [(2, 2), (3, 2)], 108, "Messi"
+    else:
+        steps, minute, scorer = [(0, 0), (1, 0)], 63, ""
+    opponent = "France" if entry["name_en"] != "France" else "Argentina"
+
+    # Unique match id per run so deterministic event ids never dedupe a re-test
+    fixture = {"id": int(time.time()), "home_id": 990001, "home_name": entry["name_en"],
+               "away_id": 990002, "away_name": opponent}
+    provider = MockProvider(fixture, steps, scorer=scorer, minute=minute)
+    detector = GoalDetector(provider.name)
+    followed = {fixture["home_id"]}
+
+    print(f"⚽ test-run: {entry['flag']} {entry['name_en']} vs {opponent} — mock API, real pipeline")
+    detector.process(provider.live_matches(sorted(followed)), followed)
+    print(f"  poll #1: {steps[0][0]}-{steps[0][1]} (baseline) — next poll in {args.delay}s, keep watching…")
+    time.sleep(max(0.0, args.delay))
+
+    events = detector.process(provider.live_matches(sorted(followed)), followed)
+    if not events:
+        print("  poll #2: no goal detected — unexpected, check detector logs")
+        return 1
+    for ev in events:
+        _enrich_scorer(provider, ev)
+        dispatched = dispatch(ev, cfg)
+        verdict = "dispatched → statusline + overlay 🎬" if dispatched else "suppressed (muted)"
+        print(f"  poll #2: {steps[1][0]}-{steps[1][1]} → GOAL ({ev.event_id}) → {verdict}")
+    return 0
+
+
 # ── entry point ────────────────────────────────────────────────────────────
 
 def main(argv: list[str] | None = None) -> int:
@@ -196,6 +258,13 @@ def main(argv: list[str] | None = None) -> int:
     run_p = sub.add_parser("run", help="run the polling daemon loop")
     run_p.add_argument("--once", action="store_true", help="run a single iteration (debug)")
     run_p.set_defaults(fn=cmd_run)
+
+    test_p = sub.add_parser("test-run",
+                            help="simulate a live goal through the real pipeline (mock API)")
+    test_p.add_argument("--team", default="", help="team to score (zh/en/fuzzy); default: first followed team")
+    test_p.add_argument("--delay", type=float, default=5.0,
+                        help="seconds between the baseline poll and the goal poll (default 5)")
+    test_p.set_defaults(fn=cmd_test_run)
 
     sub.add_parser("probe", help="verify provider connectivity and World Cup coverage").set_defaults(fn=cmd_probe)
     sub.add_parser("status", help="show followed teams and poller heartbeat").set_defaults(fn=cmd_status)

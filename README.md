@@ -37,7 +37,7 @@ The rest of the time your statusline is fully passed through to whatever you had
 | `/golazo:unfollow China`          | Unfollow |
 | `/golazo:status`                  | Followed teams, poller heartbeat, today's scores |
 | `/golazo:mute 2h`                 | Mute (`30m` / `today` / `off`) |
-| `/golazo:test`                    | Fake a goal for any team you name, play the full show |
+| `/golazo:test`                    | Simulate a live goal through the real pipeline (mock API) |
 
 ## Architecture
 
