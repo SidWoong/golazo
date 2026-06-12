@@ -51,7 +51,9 @@ if [ -r "$STATE_FILE" ]; then
       if (gnum("schema_version") != 1) exit   # 不认识的版本：静默忽略
       ts = gnum("ts"); if (ts < 0) exit
       elapsed = now - ts
-      if (elapsed < 0) exit                   # 时钟偏差，当作无事件
+      # ts 为浮点（微秒精度）而 now 为整数秒：刚触发的事件 elapsed 可为 -1~0，归零处理；
+      # 仅大幅负值（真正的时钟偏差）才当作无事件
+      if (elapsed < 0) { if (elapsed > -2) elapsed = 0; else exit }
 
       type = gstr("type")
       team = gstr("team"); flag = gstr("team_flag"); opp = gstr("opponent")
