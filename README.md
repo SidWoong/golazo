@@ -80,8 +80,9 @@ football-data.org free tier allows ~10 requests/min. The poller uses 1 competiti
 cd poller && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]" && .venv/bin/pytest
 # overlay dry-run (needs: brew install lua)
 lua overlay/tests/dryrun.lua
-# trigger the full chain manually (a team is required — no default)
-plugin/scripts/trigger-test.sh --team Argentina --flag 🇦🇷
+# trigger the full chain manually (defaults to Messi's 108' goal in the 2022 final)
+plugin/scripts/trigger-test.sh
+plugin/scripts/trigger-test.sh --team Japan --flag 🇯🇵   # or any team
 ```
 
 Milestones and acceptance criteria: [goal-kick-开发需求.md](goal-kick-开发需求.md). MIT License.

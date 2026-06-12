@@ -8,20 +8,25 @@ set -eu
 GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
 STATE_FILE="$GK_DIR/state.json"
 
-# --team 必填（不预设任何球队）；其余字段可选
-TEAM=""; FLAG=""; OPPONENT=""; SCORE="1-0"; SCORER=""; MINUTE=0
-JERSEY=""; STRIPE=""; SHORTS=""
+# 默认场面：上一届（2022 卡塔尔）世界杯决赛，梅西加时 108 分钟进球（阿根廷 3-2 法国）
+case "${LC_ALL:-${LANG:-}}" in
+  zh*) TEAM="阿根廷"; OPPONENT="法国"; SCORER="梅西" ;;
+  *)   TEAM="Argentina"; OPPONENT="France"; SCORER="Messi" ;;
+esac
+FLAG="🇦🇷"; SCORE="3-2"; MINUTE=108
+JERSEY="#74acdf"; STRIPE="#ffffff"; SHORTS="#1a1a2e"   # 阿根廷主场球衣
 NO_OVERLAY=0
 
+TEAM_SET=0; JERSEY_SET=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --team)     TEAM="$2"; shift 2 ;;
+    --team)     TEAM="$2"; TEAM_SET=1; shift 2 ;;
     --flag)     FLAG="$2"; shift 2 ;;
     --opponent) OPPONENT="$2"; shift 2 ;;
     --score)    SCORE="$2"; shift 2 ;;
     --scorer)   SCORER="$2"; shift 2 ;;
     --minute)   MINUTE="$2"; shift 2 ;;
-    --jersey)   JERSEY="$2"; shift 2 ;;
+    --jersey)   JERSEY="$2"; JERSEY_SET=1; shift 2 ;;
     --stripe)   STRIPE="$2"; shift 2 ;;
     --shorts)   SHORTS="$2"; shift 2 ;;
     --no-overlay) NO_OVERLAY=1; shift ;;
@@ -29,13 +34,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if [ -z "$TEAM" ]; then
-  echo "用法 usage: trigger-test.sh --team <名称> [--flag <emoji>] [--opponent <名称>]" >&2
-  echo "  [--score 2-1] [--scorer <名字>] [--minute N] [--jersey/--stripe/--shorts <#hex>] [--no-overlay]" >&2
-  echo "必须指定 --team（测试动画不预设球队）。" >&2
-  exit 2
+# 显式换队但未给球衣 → 丢弃默认的阿根廷球衣（避免张冠李戴），overlay 用默认配色
+if [ "$TEAM_SET" = 1 ] && [ "$JERSEY_SET" = 0 ]; then
+  JERSEY=""; STRIPE=""; SHORTS=""
 fi
-[ -n "$OPPONENT" ] || { case "${LC_ALL:-${LANG:-}}" in zh*) OPPONENT="对手" ;; *) OPPONENT="Rivals" ;; esac; }
 
 # 球衣三色齐全才写 kit 字段，否则 overlay 使用默认配色
 KIT_JSON=""

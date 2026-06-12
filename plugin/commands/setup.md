@@ -50,4 +50,4 @@ description: goal-kick 初始化向导：依赖安装、API token、关注球队
 
 运行 `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-poller.sh"`，然后 `~/.claude/goal-kick/venv/bin/python -m goal_poller status` 确认心跳正常。
 
-最后主动询问：**"要播一次测试动画吗？⚽"** 同意则按 `/goal-kick:test` 的流程执行——用刚才关注的球队（多支时请用户选一支），取队名/旗帜/球衣配色后运行 `~/.claude/goal-kick/bin/trigger-test.sh --team … --flag … --jersey … --stripe … --shorts …`，并提醒用户留意状态栏与桌面。
+最后主动询问：**"要播一次测试动画吗？⚽"** 同意则运行 `~/.claude/goal-kick/bin/trigger-test.sh`（默认重现 2022 世界杯决赛梅西的加时进球），并提醒用户留意状态栏与桌面。
