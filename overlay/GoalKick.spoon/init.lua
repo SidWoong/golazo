@@ -1,9 +1,11 @@
 --- === GoalKick ===
---- 世界杯进球桌面特效覆盖层（goal-kick v0.1）
---- 被 `hs -c "spoon.GoalKick:play()"` 调起后：读取 ~/.claude/goal-kick/state.json，
---- 小人沿终端窗口底边从左跑到右 → 从窗口边框跃出 → 落地放大 → 助跑射门 →
---- GOOOAL 彩带 → 淡出销毁。
---- 渲染逻辑在本文件；全部动画参数（时间轴/配色/帧）在 anim/ 数据文件中，便于 v1.0 移植。
+--- World Cup goal celebration overlay for the desktop (goal-kick v0.1).
+--- Triggered via `hs -c "spoon.GoalKick:play()"`: reads ~/.claude/goal-kick/state.json,
+--- then the runner dashes along the terminal window's bottom edge → leaps out of the
+--- window frame → lands and grows → run-up and shot → GOOOAL confetti → fades out
+--- and destroys itself.
+--- Rendering logic lives in this file; all animation parameters (timeline/palette/
+--- frames) live in the anim/ data files to ease the v1.0 port.
 
 local obj = {}
 obj.__index = obj
@@ -14,16 +16,17 @@ obj.author = "goal-kick"
 obj.license = "MIT"
 obj.homepage = "https://github.com/soulland/goal-kick"
 
--- 运行态（播放期间持有，结束必须清空防泄漏）
+-- Playback state (held while playing; MUST be cleared at the end to avoid leaks)
 obj._canvas = nil
 obj._timer = nil
 obj._playing = false
 obj._confetti = nil
 
-local TL, PAL, SPR   -- anim/ 数据，init() 时加载
+local TL, PAL, SPR   -- anim/ data, loaded in init()
 
--- 可作为"终端宿主"的应用：优先按 bundle ID 匹配（不随系统语言本地化，
--- 如中文系统里 Terminal.app 显示名为「终端」），应用名仅作回退
+-- Apps that qualify as "terminal hosts": matched by bundle ID first (immune to
+-- system-language localization — e.g. Terminal.app displays as 「终端」 on a
+-- Chinese system), with the app name only as a fallback.
 local HOST_BUNDLES = {
   ["com.apple.Terminal"] = true, ["com.googlecode.iterm2"] = true,
   ["dev.warp.Warp-Stable"] = true, ["net.kovidgoyal.kitty"] = true,
@@ -42,7 +45,7 @@ local HOST_APPS = {
   ["WebStorm"] = true, ["GoLand"] = true,
 }
 
--- 窗口所属应用是否为终端宿主
+-- Does this window belong to a terminal-host app?
 local function isHostWindow(w)
   local app = w and w:application()
   if not app then return false end
@@ -51,7 +54,7 @@ local function isHostWindow(w)
   return HOST_APPS[app:name()] or false
 end
 
--- 缓动函数实现：anim/ 数据中以名字引用
+-- Easing implementations: referenced by name from the anim/ data
 local EASING = {
   linear       = function(t) return t end,
   easeInQuad   = function(t) return t * t end,
@@ -68,7 +71,7 @@ local function ease(name, t)
   return (EASING[name] or EASING.linear)(t)
 end
 
--- 阶段内归一化进度 [0,1]
+-- Normalized progress [0,1] within a phase
 local function phaseT(phase, t)
   if phase.to <= phase.from then return 1 end
   return (t - phase.from) / (phase.to - phase.from)
@@ -79,7 +82,7 @@ local function clamp(v, lo, hi)
   return v
 end
 
--- "#rrggbb" → 颜色表；非法输入返回 nil（调用方回退默认配色）
+-- "#rrggbb" → color table; nil for invalid input (callers fall back to defaults)
 local function hexColor(hex)
   if type(hex) ~= "string" then return nil end
   local r, g, b = hex:match("^#?(%x%x)(%x%x)(%x%x)$")
@@ -95,7 +98,7 @@ function obj:init()
   return self
 end
 
--- ── 状态文件 ────────────────────────────────────────────────────────────────
+-- ── state file ──────────────────────────────────────────────────────────────
 
 local function stateDir()
   return (os.getenv("GOAL_KICK_DIR") or (os.getenv("HOME") .. "/.claude/goal-kick"))
@@ -107,9 +110,10 @@ local function readState()
   return st
 end
 
--- ── 窗口定位与降级策略 ──────────────────────────────────────────────────────
--- 返回 mode（"window" 沿窗口底边跑动后跃出 / "bottom" 从屏幕底边钻出 /
--- "center" 屏幕中央开演）、目标屏幕、终端窗口对象（window 模式时非 nil）
+-- ── stage location and fallback chain ───────────────────────────────────────
+-- Returns mode ("window" = run along the window's bottom edge then leap out /
+-- "bottom" = emerge from the screen's bottom edge / "center" = play mid-screen),
+-- the target screen, and the terminal window object (non-nil in window mode).
 
 local function locateStage()
   local win = hs.window.focusedWindow()
@@ -134,15 +138,17 @@ local function locateStage()
   return "window", screen, win
 end
 
--- ── 元素构建辅助 ────────────────────────────────────────────────────────────
+-- ── element builders ────────────────────────────────────────────────────────
 
--- 像素小人：以"脚底中心"(x, y) 为锚点，按目标高度 h 渲染指定帧；flip 为真时水平镜像
--- pal 为调色板（默认 PAL；进球队球衣换装时传入覆盖代理）
--- 同色横向连续格合并为单个矩形，控制元素数量
+-- Pixel runner: anchored at the feet center (x, y), rendered at target height h;
+-- flip mirrors horizontally. pal is the palette (defaults to PAL; a kit-override
+-- proxy is passed when the runner wears a team's jersey).
+-- Horizontal runs of the same color merge into single rectangles to keep the
+-- element count down.
 local function spriteElements(frameName, x, y, h, flip, pal)
   pal = pal or PAL
   local frame = SPR.frames[frameName]
-  local ps = h / SPR.grid.rows               -- 单像素格边长
+  local ps = h / SPR.grid.rows               -- side length of one pixel cell
   local left = x - SPR.grid.cols * ps / 2
   local top = y - h
   local elems = {}
@@ -168,7 +174,7 @@ local function spriteElements(frameName, x, y, h, flip, pal)
       end
     end
   end
-  -- 脚下阴影
+  -- shadow under the feet
   elems[#elems + 1] = {
     type = "oval", action = "fill", fillColor = PAL.shadow,
     frame = { x = x - h * 0.35, y = y - h * 0.04, w = h * 0.7, h = h * 0.1 },
@@ -176,7 +182,7 @@ local function spriteElements(frameName, x, y, h, flip, pal)
   return elems
 end
 
--- 足球：白底 + 黑色点缀
+-- Football: white base + black accents
 local function ballElements(x, y, r)
   return {
     { type = "circle", action = "fill", fillColor = PAL.ballWhite,
@@ -188,7 +194,7 @@ local function ballElements(x, y, r)
   }
 end
 
--- 球门：门柱 + 横梁 + 网格；gxFrac 为门柱"开口侧"对齐用的左缘 x（已镜像换算）
+-- Goal: posts + crossbar + net grid; gxFrac is the (already mirrored) left edge
 local function goalElements(W, H, gxFrac, groundFrac, offsetX, offsetY, mirrored)
   local g = TL.goal
   local gx, gw = gxFrac * W + offsetX, g.width * W
@@ -196,7 +202,8 @@ local function goalElements(W, H, gxFrac, groundFrac, offsetX, offsetY, mirrored
   local gh = g.height * H
   local topY = groundPx - gh
   local post = math.max(3, H * 0.004)
-  -- 立柱画在背向进攻的一侧：向右进攻时在左缘，镜像时在右缘
+  -- the upright post sits on the side facing away from the attack:
+  -- left edge for a rightward attack, right edge when mirrored
   local postX = mirrored and (gx + gw - post) or gx
   local elems = {
     { type = "rectangle", action = "fill", fillColor = PAL.goalPost,
@@ -204,7 +211,7 @@ local function goalElements(W, H, gxFrac, groundFrac, offsetX, offsetY, mirrored
     { type = "rectangle", action = "fill", fillColor = PAL.goalPost,
       frame = { x = gx, y = topY, w = gw, h = post } },
   }
-  -- 网格线（细描边）
+  -- net lines (thin strokes)
   for i = 1, g.netCols do
     local nx = gx + gw * i / (g.netCols + 1)
     elems[#elems + 1] = { type = "segments", action = "stroke",
@@ -220,10 +227,11 @@ local function goalElements(W, H, gxFrac, groundFrac, offsetX, offsetY, mirrored
   return elems
 end
 
--- ── 主流程 ──────────────────────────────────────────────────────────────────
+-- ── main flow ───────────────────────────────────────────────────────────────
 
 --- GoalKick:play()
---- 读取 state.json 并播放完整覆盖层动画。事件非 goal 类型或已过覆盖层窗口则直接返回。
+--- Read state.json and play the full overlay animation. Returns immediately for
+--- non-goal events or events already past their overlay window.
 function obj:play()
   if self._playing then self:stop() end
 
@@ -237,7 +245,8 @@ function obj:play()
   local sf = screen:fullFrame()
   local W, H = sf.w, sf.h
 
-  -- 画布覆盖整个目标屏幕；坐标系内部使用画布局部比例坐标
+  -- The canvas covers the whole target screen; internal coordinates are
+  -- canvas-local fractions
   local canvas = hs.canvas.new(sf)
   canvas:level(hs.canvas.windowLevels.screenSaver)
   canvas:behaviorAsLabels({ "canJoinAllSpaces", "stationary" })
@@ -245,29 +254,31 @@ function obj:play()
   canvas:canvasMouseEvents(false, false, false, false)
   canvas:show()
 
-  -- ── 舞台几何 ──
-  -- ctx.dir：1 = 向右进攻，-1 = 跳出点右侧空间不足时整场镜像（向左进攻）
+  -- ── stage geometry ──
+  -- ctx.dir: 1 = attack rightward, -1 = mirror the whole pitch (attack leftward)
+  -- when there is not enough room to the right of the exit point
   local ctx = { mode = mode, W = W, H = H }
   if mode == "window" and win then
     local wf = win:frame()
-    ctx.wL = clamp((wf.x - sf.x) / W + 0.012, 0, 1)            -- 窗口底边内侧起点
-    ctx.wR = clamp((wf.x + wf.w - sf.x) / W, 0.05, 0.99)       -- 跳出点：右下角边框
+    ctx.wL = clamp((wf.x - sf.x) / W + 0.012, 0, 1)            -- start of the run along the bottom edge
+    ctx.wR = clamp((wf.x + wf.w - sf.x) / W, 0.05, 0.99)       -- exit point: the bottom-right corner
     ctx.yEdge = clamp((wf.y + wf.h - sf.y) / H - 0.012, 0.1, 0.98)
     ctx.dir = (ctx.wR <= 0.55) and 1 or -1
-    -- 地面不能高于窗口底边（小人不能"跳上去"），随窗口动态下移
+    -- the ground must not sit above the window's bottom edge (the runner cannot
+    -- "jump upward"); it shifts down dynamically for low windows
     ctx.ground = clamp(math.max(TL.groundY, ctx.yEdge + 0.08), TL.groundY, 0.92)
     ctx.jumpFromX, ctx.jumpFromY = ctx.wR, ctx.yEdge
   elseif mode == "bottom" then
     ctx.dir = 1
     ctx.ground = TL.groundY
-    ctx.jumpFromX, ctx.jumpFromY = 0.25, 1.05                  -- 屏幕底边外钻出
+    ctx.jumpFromX, ctx.jumpFromY = 0.25, 1.05                  -- emerge from below the screen edge
   else
     ctx.dir = 1
     ctx.ground = TL.groundY
-    ctx.jumpFromX, ctx.jumpFromY = 0.35, TL.groundY            -- 中央开演：直接站在地面
+    ctx.jumpFromX, ctx.jumpFromY = 0.35, TL.groundY            -- center mode: standing on the ground
   end
 
-  -- 镜像换算：数据中的 x 均按"向右进攻"书写
+  -- Mirror mapping: all x values in the data are written for a rightward attack
   local function mx(x) return ctx.dir == 1 and x or (1 - x) end
   ctx.mx = mx
   ctx.landX = clamp(ctx.jumpFromX + TL.phases.jump.driftX * ctx.dir, 0.05, 0.95)
@@ -277,7 +288,8 @@ function obj:play()
   ctx.goalCx = ctx.goalLeftX + TL.goal.width * 0.5
   ctx.ev = st.event
 
-  -- 球衣换装：event.kit 提供时覆盖小人配色（jersey/stripe/shorts），缺省用默认配色
+  -- Kit swap: when event.kit is present it overrides the runner's colors
+  -- (jersey/stripe/shorts); the default palette is used otherwise
   local kit = st.event.kit
   if type(kit) == "table" then
     local over = { jersey = hexColor(kit.jersey), stripe = hexColor(kit.stripe),
@@ -285,7 +297,8 @@ function obj:play()
     ctx.pal = setmetatable({}, { __index = function(_, k) return over[k] or PAL[k] end })
   end
 
-  -- 播放若晚于 overlay 窗口起点（如手动重播），动画从对应进度续播
+  -- If play() arrives after the overlay window opened (e.g. a manual replay),
+  -- resume the animation at the matching progress
   local tOffset = math.max(0, elapsed - overlayWin[1])
   local t0 = hs.timer.secondsSinceEpoch() - tOffset
 
@@ -311,7 +324,7 @@ function obj:play()
 end
 
 --- GoalKick:stop()
---- 立即停止播放并销毁全部资源（timer、canvas、粒子缓存）。
+--- Stop playback immediately and destroy every resource (timer, canvas, particles).
 function obj:stop()
   if self._timer then self._timer:stop(); self._timer = nil end
   if self._canvas then self._canvas:delete(); self._canvas = nil end
@@ -320,7 +333,8 @@ function obj:stop()
   return self
 end
 
--- 单帧渲染：根据 t 所处阶段构建元素表，整体替换画布内容
+-- Render one frame: build the element list for the phase containing t and
+-- replace the canvas content wholesale
 function obj:_renderFrame(t, ctx)
   local W, H = ctx.W, ctx.H
   local P = TL.phases
@@ -330,12 +344,12 @@ function obj:_renderFrame(t, ctx)
   local elems = {}
   local function add(list) for _, e in ipairs(list) do elems[#elems + 1] = e end end
 
-  -- 收场阶段：整体淡出用画布级 alpha，元素照常构建
+  -- Outro: the global fade uses canvas-level alpha; elements build as usual
   if t >= P.fade.from then
     self._canvas:alpha(1 - ease(P.fade.easing, phaseT(P.fade, t)))
   end
 
-  -- 球门常驻（gooal 阶段前 shakeDur 秒震动）
+  -- The goal is always present (shaking for the first shakeDur seconds of gooal)
   local shakeX, shakeY = 0, 0
   if t >= P.gooal.from and t < P.gooal.from + P.gooal.shakeDur then
     local amp = P.gooal.shakeAmp * H * (1 - (t - P.gooal.from) / P.gooal.shakeDur)
@@ -344,7 +358,8 @@ function obj:_renderFrame(t, ctx)
   end
   add(goalElements(W, H, ctx.goalLeftX, ctx.ground, shakeX, shakeY, flip))
 
-  -- 涟漪：抵达窗口边框、即将跃出的交接标记（仅 window 模式）
+  -- Ripple: the handoff marker at the window border just before the leap
+  -- (window mode only)
   if ctx.mode == "window" and t >= P.ripple.from and t < P.ripple.to then
     local pt = ease(P.ripple.easing, phaseT(P.ripple, t))
     local r = P.ripple.rippleMaxR * H * pt
@@ -355,14 +370,15 @@ function obj:_renderFrame(t, ctx)
       radius = math.max(r, 1) }
   end
 
-  -- 小人位置与体型（按阶段）
+  -- Runner position and size, per phase
   local px, py, ph, frameName
   local pflip = flip
   if t < P.approach.to then
     if ctx.mode ~= "window" then
-      px = nil                              -- 非 window 模式此阶段不出现小人
+      px = nil                              -- the runner is hidden in this phase for non-window modes
     else
-      -- 沿窗口底边内侧从左走到右（始终向右，与状态栏小人方向一致）
+      -- run along the inside of the window's bottom edge, left to right
+      -- (always rightward, matching the statusline runner's direction)
       local at = ease(P.approach.easing, phaseT(P.approach, t))
       px = ctx.wL + (ctx.wR - ctx.wL) * at
       py = ctx.yEdge
@@ -371,7 +387,7 @@ function obj:_renderFrame(t, ctx)
       frameName = (math.floor(t / P.approach.runFrameDur) % 2 == 0) and "runA" or "runB"
     end
   elseif t < P.jump.to and ctx.mode ~= "center" then
-    -- 跳出：抛物线越过窗口边框落到地面，体型放大
+    -- leap: parabola over the window border down to the ground, growing
     local jt = ease(P.jump.easing, phaseT(P.jump, t))
     px = ctx.jumpFromX + (ctx.landX - ctx.jumpFromX) * jt
     py = ctx.jumpFromY + (ctx.ground - ctx.jumpFromY) * jt
@@ -379,7 +395,7 @@ function obj:_renderFrame(t, ctx)
     ph = playerH * (TL.playerScaleStart + (TL.playerScaleEnd - TL.playerScaleStart) * jt)
     frameName = "runA"
   elseif t < P.run.to then
-    -- 助跑：沿地面奔向足球，双帧交替
+    -- run-up: sprint along the ground towards the ball, alternating two frames
     local rt = ease(P.run.easing, phaseT(P.run, math.max(t, P.run.from)))
     local fromX = (ctx.mode == "center") and ctx.jumpFromX or ctx.landX
     px = fromX + (ctx.runEndX - fromX) * rt
@@ -389,22 +405,22 @@ function obj:_renderFrame(t, ctx)
   elseif t < P.kick.to then
     px, py, ph, frameName = ctx.runEndX, ctx.ground, playerH * TL.playerScaleEnd, "kick"
   else
-    -- 射门后原地庆祝
+    -- celebrate in place after the shot
     px, py, ph, frameName = ctx.runEndX, ctx.ground, playerH * TL.playerScaleEnd, "cheer"
   end
   if px then
     add(spriteElements(frameName, px * W, py * H, ph, pflip, ctx.pal))
   end
 
-  -- 足球
+  -- The football
   local ballR = math.max(6, H * 0.011)
   local goalCx = ctx.goalCx * W
   local goalCy = groundPx - TL.goal.height * H * 0.45
   if t >= P.run.from and t < P.flight.from then
-    -- 静置在小人前方地面
+    -- resting on the ground ahead of the runner
     add(ballElements(ctx.ballX * W, groundPx - ballR, ballR))
   elseif t >= P.flight.from and t < P.flight.to then
-    -- 飞行：抛物线 + 金色拖尾
+    -- flight: parabola plus a golden trail
     local ft = ease(P.flight.easing, phaseT(P.flight, t))
     local bx0, by0 = ctx.ballX * W, groundPx - ballR
     local bx = bx0 + (goalCx - bx0) * ft
@@ -420,14 +436,15 @@ function obj:_renderFrame(t, ctx)
     end
     add(ballElements(bx, by, ballR))
   elseif t >= P.flight.to then
-    -- 入网静止
+    -- resting in the net
     add(ballElements(goalCx + shakeX, goalCy + shakeY, ballR))
   end
 
-  -- GOOOAL 阶段：彩带 + 大字
+  -- GOOOAL phase: confetti + the big title
   if t >= P.gooal.from then
     local gt = t - P.gooal.from
-    -- 彩带粒子：进入阶段时一次性生成，之后按简单物理推进
+    -- Confetti particles: generated once on phase entry, then advanced with
+    -- simple physics
     if not self._confetti then
       self._confetti = {}
       for i = 1, P.gooal.confettiCount do
@@ -452,7 +469,7 @@ function obj:_renderFrame(t, ctx)
           frame = { x = cx, y = cy, w = c.size, h = c.size * 1.6 } }
       end
     end
-    -- "GOOOAL!" 大字 + 比分 + 进球者：弹性放大入场
+    -- "GOOOAL!" title + score + scorer: elastic scale-in
     local st_ = math.min(1, gt / P.gooal.textInDur)
     local scale = ease(P.gooal.textEasing, st_)
     local titleSize = P.gooal.titleSizeFrac * H * scale
@@ -467,7 +484,7 @@ function obj:_renderFrame(t, ctx)
       elems[#elems + 1] = { type = "text", text = sub,
         textSize = subSize, textColor = PAL.scoreText, textAlignment = "center",
         frame = { x = 0, y = H * 0.28 + titleSize * 0.85, w = W, h = subSize * 1.4 } }
-      -- 进球者独立一行（金色），分钟/人名按可得性组合
+      -- The scorer gets its own golden line; minute/name combine by availability
       local minute, scorer = ev.minute or 0, ev.scorer or ""
       local who = ""
       if scorer ~= "" and minute > 0 then

@@ -1,11 +1,11 @@
 ---
-description: 取消关注球队
-argument-hint: <球队名，可多个>
+description: Unfollow teams
+argument-hint: <team names, one or more>
 ---
 
-用户想取消关注：$ARGUMENTS
+The user wants to unfollow: $ARGUMENTS
 
-解析出球队名，对每个执行：
-`~/.claude/goal-kick/venv/bin/python -m goal_poller config remove-team <名称>`
+Parse the team names and run for each:
+`~/.claude/goal-kick/venv/bin/python -m goal_poller config remove-team <name>`
 
-命令会输出实际移除结果（按子串匹配中英文名）。完成后 `config list` 汇报剩余关注列表。若列表已空，提醒用户 poller 将进入待机、不再触发任何动画。
+The command prints what was actually removed (substring match on zh/en names). Afterwards run `config list` and report the remaining followed teams. If the list is now empty, mention the poller will idle and no animations will trigger.

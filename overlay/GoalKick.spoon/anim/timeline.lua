@@ -1,49 +1,55 @@
--- goal-kick 覆盖层动画时间轴数据（纯数据文件，v1.0 Tauri 移植直接复用）
--- 所有时间为「覆盖层内部秒」：0 = state.json timeline.overlay_play[1]（即 handoff 时刻）
--- 所有坐标为目标屏幕的比例值（0~1），渲染端负责映射到像素
--- easing 为命名引用，实现见渲染端 EASING 表（linear/easeOutQuad/easeInQuad/easeOutCubic/easeOutBack）
+-- goal-kick overlay animation timeline (pure data; reused as-is by the v1.0 Tauri port)
+-- All times are "overlay-internal seconds": 0 = state.json timeline.overlay_play[1]
+-- (i.e. the handoff moment).
+-- All coordinates are fractions (0~1) of the target screen; the renderer maps to pixels.
+-- `easing` values are named references implemented in the renderer's EASING table
+-- (linear/easeOutQuad/easeInQuad/easeOutCubic/easeOutBack).
 --
--- 镜像规则（渲染端实现）：跳出点右侧空间不足时整场水平镜像
--- （向左助跑、球门置于左侧、小人翻转），数据中的 x 坐标均按"向右进攻"书写。
+-- Mirroring rule (implemented in the renderer): when there is not enough room to
+-- the right of the exit point, the whole pitch mirrors horizontally (run left,
+-- goal on the left, sprites flipped). All x values here are written for a
+-- rightward attack.
 return {
-  total = 8.2,          -- 动画总时长；播完必须停 timer、销毁 canvas
+  total = 8.2,          -- total duration; the timer MUST stop and the canvas be destroyed at the end
   fps = 30,
 
-  -- 场景常量
-  groundY = 0.80,       -- "地面"基准：屏幕高度 80% 处（窗口更低时渲染端动态下移，上限 0.92）
+  -- scene constants
+  groundY = 0.80,       -- "ground" baseline: 80% of screen height (renderer lowers it for low windows, capped at 0.92)
   playerScaleStart = 1.0,
-  playerScaleEnd = 3.0, -- 落地后体型放大约 3 倍
-  playerBaseHeightFrac = 0.045,  -- 起始体型：屏高的 4.5%（×3 后约 13.5%）
+  playerScaleEnd = 3.0, -- the runner grows ~3x while landing
+  playerBaseHeightFrac = 0.045,  -- starting size: 4.5% of screen height (~13.5% after ×3)
 
-  goal = {              -- 球门（按向右进攻书写；镜像时渲染端换算到左侧）
-    x = 0.88,           -- 门柱左缘
+  goal = {              -- the goal (written for a rightward attack; renderer mirrors when needed)
+    x = 0.88,           -- left edge of the goalposts
     width = 0.10,
-    height = 0.22,      -- 相对屏高，从地面向上
+    height = 0.22,      -- relative to screen height, rising from the ground
     netRows = 5,
     netCols = 7,
   },
 
   phases = {
-    -- 沿窗口底边内侧从左走到右（仅 window 模式；其他模式此阶段不出现小人）
+    -- run along the inside of the window's bottom edge, left to right
+    -- (window mode only; the runner is hidden in this phase for other modes)
     approach = { from = 0.0, to = 1.2, runFrameDur = 0.12, easing = "easeInQuad" },
-    -- 跳出：抵达窗口右下角边框，涟漪标记交接点，抛物线跃出并放大
+    -- exit: reach the window's bottom-right border, mark the handoff with a
+    -- ripple, leap out along a parabola while growing
     ripple  = { from = 1.2, to = 1.7, rippleMaxR = 0.04, easing = "easeOutQuad" },
     jump    = { from = 1.2, to = 2.0, arcHeight = 0.08, driftX = 0.07, easing = "easeInQuad" },
-    -- 助跑：沿地面奔向足球
+    -- run-up: sprint along the ground towards the ball
     run     = { from = 2.0, to = 3.0, runFrameDur = 0.12, easing = "linear",
-                endX = 0.74,       -- 跑到球前（球在 0.78）
+                endX = 0.74,       -- stop just short of the ball (ball at 0.78)
                 ballX = 0.78 },
-    -- 射门：踢腿，球以抛物线 + 金色拖尾飞向球门
+    -- kick: strike pose; the ball flies to the goal on a parabola with a golden trail
     kick    = { from = 3.0, to = 3.3, easing = "linear" },
     flight  = { from = 3.3, to = 3.8, arcHeight = 0.10, trailLen = 6, easing = "easeOutQuad" },
-    -- GOOOAL：入网、球门震动、彩带、大字弹性入场
+    -- GOOOAL: net bulge, goal shake, confetti, elastic title entrance
     gooal   = { from = 3.8, to = 6.8,
                 shakeDur = 0.5, shakeAmp = 0.008,
                 confettiCount = 150, confettiGravity = 0.35,
                 textInDur = 0.6, textEasing = "easeOutBack",
-                titleSizeFrac = 0.09,   -- "GOOOAL!" 字号：屏高比例
+                titleSizeFrac = 0.09,   -- "GOOOAL!" font size as a fraction of screen height
                 scoreSizeFrac = 0.035 },
-    -- 收场：全部元素淡出
+    -- outro: fade everything out
     fade    = { from = 6.8, to = 8.2, easing = "easeOutQuad" },
   },
 }

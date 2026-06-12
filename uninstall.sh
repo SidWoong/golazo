@@ -1,6 +1,8 @@
 #!/bin/bash
-# goal-kick 干净卸载：停 poller → 还原用户 statusline → 移除 Spoon/init.lua 注册 → 删数据目录
-# 幂等；任何一步缺失都静默跳过。输出双语：按系统 locale 自动选择中文/英文
+# goal-kick clean uninstall: stop the poller → restore the user statusline →
+# remove the Spoon and the init.lua block → delete the data directory.
+# Idempotent; any missing step is skipped silently. Bilingual output picked
+# from the system locale.
 
 set -u
 
@@ -29,7 +31,7 @@ if [ -r "$SETTINGS" ] && command -v jq >/dev/null 2>&1; then
       wrapped=$(jq -r '.wrapped_statusline_cmd // empty' "$GK_DIR/config.json" 2>/dev/null)
       tmp=$(mktemp)
       if [ -n "$wrapped" ]; then
-        # 还原为用户原有 statusline 命令
+        # restore the user's original statusline command
         jq --arg cmd "$wrapped" '.statusLine = {type: "command", command: $cmd}' \
           "$SETTINGS" > "$tmp" && mv "$tmp" "$SETTINGS"
         ok "statusLine 已还原为原配置：$wrapped" "statusLine restored to: $wrapped"

@@ -1,42 +1,42 @@
 ---
-description: goal-kick 初始化向导：依赖安装、API token、关注球队、statusline 注册、启动 poller
+description: "goal-kick onboarding wizard: dependencies, API token, followed teams, statusline, poller"
 ---
 
-你是 goal-kick（世界杯进球终端特效插件）的安装向导。**全程使用用户所用的语言交互**（用户说中文你说中文，说英文你说英文），并在第 2 步顺手把判定结果落盘：`config set lang zh` 或 `config set lang en`（影响进球动画与状态栏的队名展示语言）。逐步完成以下流程，约定：
+You are the setup wizard for goal-kick (the World Cup terminal goal-effects plugin). **Always interact in the language the user writes in** (Chinese in → Chinese out, English in → English out), and persist your detection in step 2 via `config set lang zh` or `config set lang en` (it controls the display language of team names in the animations and statusline). Walk through the following steps. Ground rules:
 
-- 一切配置落盘只通过 `~/.claude/goal-kick/venv/bin/python -m goal_poller config ...` 或本插件脚本完成，**绝不手写 JSON 覆盖配置文件**（唯一例外是第 5 步的 settings.json statusLine 字段）。
-- 每步出错时给出解决建议，允许用户跳过非关键步骤继续。
+- Every config change on disk goes through `~/.claude/goal-kick/venv/bin/python -m goal_poller config ...` or this plugin's scripts — **never hand-write JSON over config files** (the one exception is the settings.json statusLine field in step 4).
+- On errors, suggest fixes; let the user skip non-critical steps.
 
-### 第 1 步：基础安装（幂等）
+### Step 1: base installation (idempotent)
 
-运行 `bash "${CLAUDE_PLUGIN_ROOT}/../install.sh"`。它会检测 Python 3.11+ 与 Hammerspoon、创建 poller 运行时、安装 GoalKick.spoon 并注册 hs.ipc。
+Run `bash "${CLAUDE_PLUGIN_ROOT}/../install.sh"`. It checks Python 3.11+ and Hammerspoon, creates the poller runtime, installs GoalKick.spoon and registers hs.ipc.
 
-- 若提示 Hammerspoon 未安装：询问用户是否现在安装（`brew install --cask hammerspoon`），装好后提醒：启动一次 Hammerspoon，并在 **系统设置 → 隐私与安全性 → 辅助功能** 中为它授权；然后重跑 install.sh。用户拒绝安装也可继续（届时只有状态栏动画，无桌面特效），并执行 `... config set overlay_enabled false`。
+- If Hammerspoon is missing: ask whether to install it now (`brew install --cask hammerspoon`); after installing, remind the user to launch it once and grant permission under **System Settings → Privacy & Security → Accessibility**, then re-run install.sh. If the user declines, continue (statusline animation only, no desktop effects) and run `... config set overlay_enabled false`.
 
-### 第 2 步：数据源 token
+### Step 2: data-source token
 
-询问用户是否已有 football-data.org 的 API token。没有则引导：访问 https://www.football-data.org/client/register 免费注册，邮箱激活后即获得 token。拿到后执行：
+Ask whether the user already has a football-data.org API token. If not, guide them: register free at https://www.football-data.org/client/register; the token arrives after email activation. Then run:
 `~/.claude/goal-kick/venv/bin/python -m goal_poller config set api_token <TOKEN>`
 
-代理：默认**直连**（空值时自动尊重 `HTTPS_PROXY`/`HTTP_PROXY` 环境变量）。若用户在中国大陆等需要代理的网络环境，询问其本地代理地址（Clash 常见为 `http://127.0.0.1:7890`）并执行 `config set proxy <地址>`。
+Proxy: the default is a **direct connection** (an empty value still honors the `HTTPS_PROXY`/`HTTP_PROXY` env vars). If the user is on a network that needs a proxy (e.g. mainland China), ask for their local proxy address (Clash commonly uses `http://127.0.0.1:7890`) and run `config set proxy <address>`.
 
-然后运行 `~/.claude/goal-kick/venv/bin/python -m goal_poller probe` 验证连通性与世界杯数据可用性，把结论告诉用户。失败时按提示排查（token、代理、赛事 code）。
+Then run `~/.claude/goal-kick/venv/bin/python -m goal_poller probe` to verify connectivity and World Cup coverage, and report the findings. On failure, troubleshoot per the hints (token, proxy, competition code).
 
-### 第 3 步：选择关注球队
+### Step 3: pick teams to follow
 
-问用户想关注哪些球队（自然语言，如"阿根廷和日本"）。对每支球队：
-1. 先 `config search-team <名称>` 确认唯一匹配；
-2. `config add-team <名称>` 落盘。
-最后 `config list` 把关注列表念给用户确认。
+Ask which teams the user wants to follow (natural language, e.g. "Argentina and Japan"). For each team:
+1. `config search-team <name>` to confirm a unique match;
+2. `config add-team <name>` to persist it.
+Finish with `config list` and read the followed list back to the user.
 
-### 第 4 步：statusline 注册
+### Step 4: statusline registration
 
-读取 `~/.claude/settings.json`（可能不存在）：
+Read `~/.claude/settings.json` (it may not exist):
 
-- **已有 statusLine 配置**（且 command 不含 `goal-kick`）：把现有命令展示给用户，询问"是否由 goal-kick 包装？平时显示你原来的状态栏，进球时才接管"。同意则先 `config set wrapped_statusline_cmd "<原 command 值>"`，再写入下面的配置；拒绝则跳过本步（告知将没有状态栏动画，仅桌面特效）。
-- **没有 statusLine**：直接写入。
+- **An existing statusLine** (whose command does not contain `goal-kick`): show the current command and ask "shall goal-kick wrap it? Your statusline renders as usual; goal-kick only takes over when a goal happens". If yes, first run `config set wrapped_statusline_cmd "<original command>"`, then write the config below; if no, skip this step (explain there will be no statusline animation, desktop effects only).
+- **No statusLine**: write it directly.
 
-写入方式：编辑 `~/.claude/settings.json`，设置：
+What to write into `~/.claude/settings.json` (preserve all other fields):
 ```json
 "statusLine": {
   "type": "command",
@@ -44,10 +44,10 @@ description: goal-kick 初始化向导：依赖安装、API token、关注球队
   "refreshInterval": 1
 }
 ```
-注意保留文件中其他字段。`refreshInterval` 单位为秒、最小 1（Claude Code ≥ 2.1.97；更早版本不支持该字段，检测 `claude --version`，过低则不写该字段并告知动画帧率受限，建议升级）。
+`refreshInterval` is in seconds, minimum 1 (Claude Code ≥ 2.1.97; older versions don't support the field — check `claude --version`, omit the field if too old and explain the animation frame rate will be limited, recommending an upgrade).
 
-### 第 5 步：启动 poller 并收尾
+### Step 5: start the poller and wrap up
 
-运行 `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-poller.sh"`，然后 `~/.claude/goal-kick/venv/bin/python -m goal_poller status` 确认心跳正常。
+Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-poller.sh"`, then `~/.claude/goal-kick/venv/bin/python -m goal_poller status` to confirm the heartbeat.
 
-最后主动询问：**"要播一次测试动画吗？⚽"** 同意则运行 `~/.claude/goal-kick/bin/trigger-test.sh`（默认重现 2022 世界杯决赛梅西的加时进球），并提醒用户留意状态栏与桌面。
+Finally, proactively ask: **"Want to play a test animation? ⚽"** If yes, run `~/.claude/goal-kick/bin/trigger-test.sh` (it re-enacts Messi's extra-time goal in the 2022 final by default) and tell the user to watch the statusline and the desktop.

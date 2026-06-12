@@ -1,7 +1,7 @@
--- goal-kick 配色数据（纯数据文件，v1.0 Tauri 移植直接复用）
--- 颜色统一为 { red, green, blue, alpha }，分量 0~1
+-- goal-kick color palette (pure data; reused as-is by the v1.0 Tauri port)
+-- Colors are { red, green, blue, alpha } with components in 0~1
 return {
-  -- 主特效色：金色 #f7c948
+  -- primary effect color: gold #f7c948
   gold        = { red = 0.969, green = 0.788, blue = 0.282, alpha = 1.0 },
   goldSoft    = { red = 0.969, green = 0.788, blue = 0.282, alpha = 0.35 },
   white       = { red = 1.0,   green = 1.0,   blue = 1.0,   alpha = 1.0 },
@@ -10,19 +10,19 @@ return {
   goalPost    = { red = 0.92,  green = 0.92,  blue = 0.95,  alpha = 1.0 },
   scoreText   = { red = 1.0,   green = 1.0,   blue = 1.0,   alpha = 0.95 },
 
-  -- 像素小人各部位
+  -- pixel-runner body parts
   skin   = { red = 0.96, green = 0.80, blue = 0.62, alpha = 1.0 },
   hair   = { red = 0.20, green = 0.14, blue = 0.08, alpha = 1.0 },
-  jersey = { red = 0.45, green = 0.75, blue = 0.95, alpha = 1.0 },  -- 天蓝球衣
-  stripe = { red = 1.0,  green = 1.0,  blue = 1.0,  alpha = 1.0 },  -- 白条纹
+  jersey = { red = 0.45, green = 0.75, blue = 0.95, alpha = 1.0 },  -- sky-blue jersey
+  stripe = { red = 1.0,  green = 1.0,  blue = 1.0,  alpha = 1.0 },  -- white stripe
   shorts = { red = 0.10, green = 0.12, blue = 0.30, alpha = 1.0 },
   boots  = { red = 0.12, green = 0.12, blue = 0.12, alpha = 1.0 },
 
-  -- 足球
+  -- the football
   ballWhite = { red = 0.98, green = 0.98, blue = 0.96, alpha = 1.0 },
   ballBlack = { red = 0.10, green = 0.10, blue = 0.10, alpha = 1.0 },
 
-  -- 彩带六色：金/红/蓝/绿/粉/橙
+  -- six confetti colors: gold/red/blue/green/pink/orange
   confetti = {
     { red = 0.969, green = 0.788, blue = 0.282, alpha = 1.0 },
     { red = 0.92,  green = 0.26,  blue = 0.21,  alpha = 1.0 },

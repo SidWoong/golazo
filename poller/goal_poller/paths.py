@@ -1,4 +1,5 @@
-"""目录与文件路径：所有落盘位置的唯一出处，GOAL_KICK_DIR 环境变量可整体重定向（测试用）。"""
+"""Filesystem locations: the single source of truth for everything we persist.
+The GOAL_KICK_DIR env var redirects the whole tree (used by tests)."""
 import os
 from pathlib import Path
 

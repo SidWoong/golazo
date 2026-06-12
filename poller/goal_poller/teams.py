@@ -1,15 +1,17 @@
-"""2026 世界杯 48 强静态映射表与查询。
+"""Static mapping table of the 48 teams of World Cup 2026, plus lookups.
 
-provider_team_id 不在此硬编码（无法离线核实），由 follow 流程通过
-provider.list_teams() 按 name_en/tla/aliases 在线解析后写入 config。
-名单核实于 2026-06-12（UEFA 官网 + Sky Sports）：欧洲区附加赛出线为
-波黑/瑞典/土耳其/捷克，洲际附加赛出线为伊拉克/刚果民主共和国。
+provider_team_id is deliberately not hardcoded here (it cannot be verified
+offline); the follow flow resolves it online via provider.list_teams(),
+matching on name_en/tla/aliases, and writes it into the config.
+Roster verified on 2026-06-12 (UEFA official site + Sky Sports): the UEFA
+play-off winners are Bosnia and Herzegovina / Sweden / Türkiye / Czechia,
+the inter-confederation play-off winners are Iraq / DR Congo.
 """
 from __future__ import annotations
 
-# aliases 同时收录：中文别称、provider 侧可能使用的英文变体（用于 API 名称匹配）
+# aliases hold both Chinese nicknames and English variants the provider may use (for API name matching)
 TEAMS_WC2026: list[dict] = [
-    # ── 亚足联 AFC (9) ──
+    # ── AFC (9) ──
     {"name_zh": "澳大利亚", "name_en": "Australia", "tla": "AUS", "flag": "🇦🇺", "aliases": ["澳洲", "袋鼠军团"]},
     {"name_zh": "伊朗", "name_en": "Iran", "tla": "IRN", "flag": "🇮🇷", "aliases": ["IR Iran"]},
     {"name_zh": "伊拉克", "name_en": "Iraq", "tla": "IRQ", "flag": "🇮🇶", "aliases": []},
@@ -19,7 +21,7 @@ TEAMS_WC2026: list[dict] = [
     {"name_zh": "沙特阿拉伯", "name_en": "Saudi Arabia", "tla": "KSA", "flag": "🇸🇦", "aliases": ["沙特", "沙地阿拉伯"]},
     {"name_zh": "韩国", "name_en": "South Korea", "tla": "KOR", "flag": "🇰🇷", "aliases": ["南韩", "大韩民国", "Korea Republic"]},
     {"name_zh": "乌兹别克斯坦", "name_en": "Uzbekistan", "tla": "UZB", "flag": "🇺🇿", "aliases": ["乌兹别克"]},
-    # ── 非足联 CAF (10) ──
+    # ── CAF (10) ──
     {"name_zh": "阿尔及利亚", "name_en": "Algeria", "tla": "ALG", "flag": "🇩🇿", "aliases": []},
     {"name_zh": "佛得角", "name_en": "Cape Verde", "tla": "CPV", "flag": "🇨🇻", "aliases": ["维德角", "Cabo Verde", "Cape Verde Islands"]},
     {"name_zh": "刚果民主共和国", "name_en": "DR Congo", "tla": "COD", "flag": "🇨🇩", "aliases": ["刚果（金）", "刚果金", "民主刚果", "Congo DR", "Congo, Democratic Republic"]},
@@ -30,23 +32,23 @@ TEAMS_WC2026: list[dict] = [
     {"name_zh": "塞内加尔", "name_en": "Senegal", "tla": "SEN", "flag": "🇸🇳", "aliases": []},
     {"name_zh": "南非", "name_en": "South Africa", "tla": "RSA", "flag": "🇿🇦", "aliases": []},
     {"name_zh": "突尼斯", "name_en": "Tunisia", "tla": "TUN", "flag": "🇹🇳", "aliases": ["突尼西亚"]},
-    # ── 中北美加勒比 CONCACAF (6，含三东道主) ──
+    # ── CONCACAF (6, incl. the three hosts) ──
     {"name_zh": "加拿大", "name_en": "Canada", "tla": "CAN", "flag": "🇨🇦", "aliases": []},
     {"name_zh": "库拉索", "name_en": "Curaçao", "tla": "CUW", "flag": "🇨🇼", "aliases": ["库拉索岛", "Curacao"]},
     {"name_zh": "海地", "name_en": "Haiti", "tla": "HAI", "flag": "🇭🇹", "aliases": []},
     {"name_zh": "墨西哥", "name_en": "Mexico", "tla": "MEX", "flag": "🇲🇽", "aliases": []},
     {"name_zh": "巴拿马", "name_en": "Panama", "tla": "PAN", "flag": "🇵🇦", "aliases": []},
     {"name_zh": "美国", "name_en": "United States", "tla": "USA", "flag": "🇺🇸", "aliases": ["美利坚", "USA", "USMNT"]},
-    # ── 南美 CONMEBOL (6) ──
+    # ── CONMEBOL (6) ──
     {"name_zh": "阿根廷", "name_en": "Argentina", "tla": "ARG", "flag": "🇦🇷", "aliases": ["潘帕斯雄鹰", "蓝白军团"]},
     {"name_zh": "巴西", "name_en": "Brazil", "tla": "BRA", "flag": "🇧🇷", "aliases": ["桑巴军团", "五星巴西"]},
     {"name_zh": "哥伦比亚", "name_en": "Colombia", "tla": "COL", "flag": "🇨🇴", "aliases": []},
     {"name_zh": "厄瓜多尔", "name_en": "Ecuador", "tla": "ECU", "flag": "🇪🇨", "aliases": []},
     {"name_zh": "巴拉圭", "name_en": "Paraguay", "tla": "PAR", "flag": "🇵🇾", "aliases": []},
     {"name_zh": "乌拉圭", "name_en": "Uruguay", "tla": "URU", "flag": "🇺🇾", "aliases": []},
-    # ── 大洋洲 OFC (1) ──
+    # ── OFC (1) ──
     {"name_zh": "新西兰", "name_en": "New Zealand", "tla": "NZL", "flag": "🇳🇿", "aliases": ["纽西兰"]},
-    # ── 欧足联 UEFA (16) ──
+    # ── UEFA (16) ──
     {"name_zh": "奥地利", "name_en": "Austria", "tla": "AUT", "flag": "🇦🇹", "aliases": []},
     {"name_zh": "比利时", "name_en": "Belgium", "tla": "BEL", "flag": "🇧🇪", "aliases": ["欧洲红魔"]},
     {"name_zh": "波黑", "name_en": "Bosnia and Herzegovina", "tla": "BIH", "flag": "🇧🇦", "aliases": ["波斯尼亚和黑塞哥维那", "波斯尼亚", "Bosnia-Herzegovina"]},
@@ -66,7 +68,7 @@ TEAMS_WC2026: list[dict] = [
 ]
 
 
-# 各队主场球衣配色（jersey 衣身 / stripe 辅色 / shorts 短裤），overlay 给像素小人换装用
+# Home-kit colors per team (jersey body / stripe accent / shorts), used by the overlay to dress the runner
 KITS: dict[str, tuple[str, str, str]] = {
     "AUS": ("#ffcd00", "#00843d", "#00843d"), "IRN": ("#ffffff", "#da0000", "#ffffff"),
     "IRQ": ("#007a3d", "#ffffff", "#ffffff"), "JPN": ("#1d2088", "#ffffff", "#ffffff"),
@@ -97,7 +99,7 @@ KITS: dict[str, tuple[str, str, str]] = {
 
 
 def kit_for(entry: dict | None) -> dict | None:
-    """静态表条目 → kit 字典（写入 state.json event.kit）。未知球队返回 None。"""
+    """Static-table entry → kit dict (written into state.json event.kit). None for unknown teams."""
     if not entry:
         return None
     k = KITS.get(entry.get("tla", ""))
@@ -107,7 +109,7 @@ def kit_for(entry: dict | None) -> dict | None:
 
 
 def search(keyword: str) -> list[dict]:
-    """模糊查询：关键词对 name_zh / name_en / tla / aliases 做大小写不敏感子串匹配。"""
+    """Fuzzy lookup: case-insensitive substring match against name_zh / name_en / tla / aliases."""
     kw = keyword.strip().lower()
     if not kw:
         return []
@@ -120,7 +122,7 @@ def search(keyword: str) -> list[dict]:
 
 
 def match_api_name(api_name: str, tla: str | None = None) -> dict | None:
-    """把 provider 返回的球队名（英文）映射回静态表条目，用于解析 provider_team_id。"""
+    """Map a provider-side (English) team name back to a static-table entry, used to resolve provider_team_id."""
     name = api_name.strip().lower()
     for t in TEAMS_WC2026:
         if tla and t["tla"].lower() == tla.lower():

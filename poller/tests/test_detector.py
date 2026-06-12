@@ -1,8 +1,8 @@
-"""§5.2 进球判定矩阵：去重 / 防回滚 / 断网不补播 / 双方进球区分。"""
+"""The §5.2 goal-judgement matrix: dedup / VAR rollback safety / no replay after gaps / both-sides scoring."""
 from goal_poller.detector import GoalDetector, MISSED_WINDOW_SEC
 from goal_poller.providers.base import Match
 
-ARG, FRA = 762, 773          # 关注阿根廷；法国为对手
+ARG, FRA = 762, 773          # following Argentina; France is the opponent
 FOLLOWED = {ARG}
 
 
@@ -16,10 +16,10 @@ def test_goal_detected_once_and_deduped():
     d = GoalDetector("fd")
     t = 1000.0
     assert d.process([mk(0, 0)], FOLLOWED, now=t) == []
-    # 进球 1-0
+    # goal: 1-0
     evs = d.process([mk(1, 0)], FOLLOWED, now=t + 20)
     assert len(evs) == 1 and evs[0].type == "goal" and evs[0].event_id == "fd-100-goal-1"
-    # 同一比分重复推送 → 不再触发
+    # the same score pushed again → no re-trigger
     assert d.process([mk(1, 0)], FOLLOWED, now=t + 40) == []
     assert d.process([mk(1, 0)], FOLLOWED, now=t + 60) == []
 
@@ -29,7 +29,7 @@ def test_dedupe_survives_restart():
     d1 = GoalDetector("fd")
     d1.process([mk(0, 0)], FOLLOWED, now=t)
     assert len(d1.process([mk(1, 0)], FOLLOWED, now=t + 20)) == 1
-    # 模拟 poller 重启：新实例读同一缓存，旧比分不重播
+    # simulate a poller restart: a new instance reads the same cache, old scores never replay
     d2 = GoalDetector("fd")
     assert d2.process([mk(1, 0)], FOLLOWED, now=t + 40) == []
 
@@ -46,11 +46,11 @@ def test_var_rollback_no_celebration():
     d = GoalDetector("fd")
     d.process([mk(0, 0)], FOLLOWED, now=1000)
     d.process([mk(1, 0)], FOLLOWED, now=1020)
-    # VAR 取消：1-0 → 0-0，产出 var_cancel，绝不产出 goal
+    # VAR disallows: 1-0 → 0-0 yields var_cancel, never a goal
     evs = d.process([mk(0, 0)], FOLLOWED, now=1040)
     assert [e.type for e in evs] == ["var_cancel"]
-    # 随后真进球（再到 1-0）：goal-1 的 id 已登记过 → 不重播（保守防误报），
-    # 但缓存已重置为 0-0，比分到 2-0 时正常触发 goal-2
+    # A real goal afterwards (back to 1-0): goal-1's id is already registered → no replay
+    # (conservative against false alarms), but the cache was reset to 0-0, so 2-0 fires goal-2 normally
     assert d.process([mk(1, 0)], FOLLOWED, now=1060) == []
     evs = d.process([mk(2, 0)], FOLLOWED, now=1080)
     assert len(evs) == 1 and evs[0].event_id == "fd-100-goal-2"
@@ -59,31 +59,31 @@ def test_var_rollback_no_celebration():
 def test_multi_goal_jump_emits_only_latest():
     d = GoalDetector("fd")
     d.process([mk(0, 0)], FOLLOWED, now=1000)
-    # 一次轮询比分从 0-0 跳到 2-1（双方都进球）
+    # one polling round jumps 0-0 → 2-1 (both sides scored)
     evs = d.process([mk(2, 1)], FOLLOWED, now=1020)
     assert len(evs) == 1
     assert evs[0].event_id == "fd-100-goal-3"
-    assert evs[0].type == "goal"            # 净增大的一侧是主队（关注队）
-    # 中间的 goal-1 / goal-2 已登记，后续不会误报
+    assert evs[0].type == "goal"            # the larger delta belongs to home (the followed team)
+    # intermediate goal-1 / goal-2 are registered; no later false alarms
     assert d.process([mk(2, 1)], FOLLOWED, now=1040) == []
 
 
 def test_missed_window_no_replay():
     d = GoalDetector("fd")
     d.process([mk(0, 0)], FOLLOWED, now=1000)
-    # 断网超过 3 分钟后恢复，期间进球只记缓存不播
+    # recovery after >3 min offline: goals in the gap only update the cache
     evs = d.process([mk(1, 0)], FOLLOWED, now=1000 + MISSED_WINDOW_SEC + 60)
     assert evs == []
-    # 恢复正常轮询后的新进球照常触发
+    # new goals after polling resumes fire normally
     evs = d.process([mk(2, 0)], FOLLOWED, now=1000 + MISSED_WINDOW_SEC + 80)
     assert len(evs) == 1 and evs[0].event_id == "fd-100-goal-2"
 
 
 def test_cold_start_existing_score_not_celebrated():
-    # poller 冷启动时窗口里有一场已 2-0 的比赛（如已结束的揭幕战）→ 只建基线不庆祝
+    # cold start with a match already at 2-0 in the window (e.g. the finished opener) → baseline only, no celebration
     d = GoalDetector("fd")
     assert d.process([mk(2, 0, status="FINISHED")], FOLLOWED, now=1000) == []
-    # 基线建立后的真实新进球照常触发
+    # real new goals after the baseline fire normally
     evs = d.process([mk(3, 0)], FOLLOWED, now=1020)
     assert len(evs) == 1 and evs[0].event_id == "fd-100-goal-3"
 

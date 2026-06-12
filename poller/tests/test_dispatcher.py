@@ -1,4 +1,4 @@
-"""分发层：state.json 组装与时间轴矩阵、静音抑制、overlay 调用条件。"""
+"""Dispatch layer: state.json assembly, the timeline matrix, mute suppression, overlay trigger conditions."""
 import json
 
 from goal_poller import dispatcher
@@ -28,15 +28,15 @@ def test_goal_state_and_timeline():
     st = dispatcher.build_state(mk_event(), base_cfg())
     ev, tl = st["event"], st["timeline"]
     assert ev["team"] == "阿根廷" and ev["team_flag"] == "🇦🇷"
-    assert ev["opponent"] == "法国"          # 静态表解析非关注队中文名
+    assert ev["opponent"] == "法国"          # static table resolves the unfollowed team's Chinese name
     assert ev["score"] == "2-1" and ev["scorer"] == "梅西" and ev["minute"] == 78
     assert tl["statusline_run"] == [0.0, 3.0] and tl["handoff"] == 3.0
     assert tl["overlay_play"] == [3.0, 11.2]
-    assert tl["scoreboard_hold"] == [11.2, 611.2]   # 10 分钟常驻
+    assert tl["scoreboard_hold"] == [11.2, 611.2]   # 10-minute scoreboard hold
 
 
 def test_english_display_names():
-    # lang=en：队名用英文展示（i18n 在 dispatcher 单点完成，读取方只渲染字符串）
+    # lang=en: team names display in English (i18n happens once in the dispatcher; readers just render strings)
     st = dispatcher.build_state(mk_event(), base_cfg(lang="en"))
     assert st["event"]["team"] == "Argentina" and st["event"]["opponent"] == "France"
 
@@ -44,7 +44,7 @@ def test_english_display_names():
 def test_goal_event_carries_team_kit():
     st = dispatcher.build_state(mk_event(), base_cfg())
     assert st["event"]["kit"] == {"jersey": "#74acdf", "stripe": "#ffffff",
-                                  "shorts": "#1a1a2e"}   # 阿根廷主场
+                                  "shorts": "#1a1a2e"}   # Argentina home kit
 
 
 def test_opponent_goal_has_no_kit():
@@ -55,13 +55,13 @@ def test_opponent_goal_has_no_kit():
 def test_overlay_disabled_timeline_collapses():
     st = dispatcher.build_state(mk_event(), base_cfg(overlay_enabled=False))
     tl = st["timeline"]
-    assert tl["overlay_play"] == [3.0, 3.0]          # 零长 → 读取方跳过覆盖层
+    assert tl["overlay_play"] == [3.0, 3.0]          # zero-length → readers skip the overlay
     assert tl["scoreboard_hold"][0] == 3.0
 
 
 def test_opponent_goal_short_notice():
     st = dispatcher.build_state(mk_event("opponent_goal", "away"), base_cfg())
-    assert st["event"]["team"] == "法国"             # 提示主语为进球的对手
+    assert st["event"]["team"] == "法国"             # the notice subject is the scoring opponent
     assert st["timeline"]["statusline_run"] == [0.0, 0.0]
     assert st["timeline"]["scoreboard_hold"] == [0.0, 90.0]
 

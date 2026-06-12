@@ -1,5 +1,5 @@
 {
-  "description": "goal-kick：会话启动时确保进球监控守护进程存活",
+  "description": "goal-kick: keep the goal-watching daemon alive on session start",
   "hooks": {
     "SessionStart": [
       {

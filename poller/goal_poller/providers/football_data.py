@@ -1,7 +1,9 @@
-"""football-data.org v4 适配器。
+"""football-data.org v4 adapter.
 
-免费档限频约 10 请求/分钟；世界杯赛事 code 预期为 WC（以 probe 实测为准）。
-所有请求走 httpx，超时 10s；proxy 为空串时直连，同时尊重 HTTPS_PROXY/HTTP_PROXY 环境变量。
+Free tier allows roughly 10 requests/min; the World Cup competition code is
+expected to be WC (verify with probe). All requests go through httpx with a
+10s timeout; an empty proxy string means direct connection while still
+honoring the HTTPS_PROXY/HTTP_PROXY env vars.
 """
 from __future__ import annotations
 
@@ -14,7 +16,7 @@ from .base import GoalDetail, Match, ProbeResult, Provider, Team
 BASE_URL = "https://api.football-data.org/v4"
 COMPETITION = "WC"
 
-# football-data.org → 标准化状态
+# football-data.org → normalized status
 _STATUS_MAP = {
     "SCHEDULED": "SCHEDULED", "TIMED": "SCHEDULED",
     "IN_PLAY": "IN_PLAY", "PAUSED": "PAUSED",
@@ -29,14 +31,15 @@ class FootballDataProvider(Provider):
     def __init__(self, token: str, proxy: str = "", competition: str = COMPETITION):
         self._token = token
         self._competition = competition
-        # proxy 显式配置优先；空串时 httpx 默认 trust_env=True，自动读 HTTPS_PROXY 等
+        # An explicit proxy wins; with an empty one httpx keeps trust_env=True
+        # and picks up HTTPS_PROXY etc. automatically
         kwargs: dict = {"timeout": 10.0,
                         "headers": {"X-Auth-Token": token} if token else {}}
         if proxy:
             kwargs["proxy"] = proxy
         self._client = httpx.Client(base_url=BASE_URL, **kwargs)
 
-    # ── Provider 接口 ──────────────────────────────────────────────
+    # ── Provider interface ─────────────────────────────────────────
 
     def list_teams(self, competition: str = "") -> list[Team]:
         comp = competition or self._competition
@@ -45,9 +48,11 @@ class FootballDataProvider(Provider):
                 for t in data.get("teams", [])]
 
     def live_matches(self, team_ids: list[int]) -> list[Match]:
-        """近期窗口（昨天~+7 天）赛事中与关注球队相关的比赛。
+        """Matches involving the followed teams in the near-term window
+        (yesterday to +7 days).
 
-        用赛事级端点一次取回（1 个请求），本地按 team_ids 过滤，节省免费档配额。
+        One competition-level request fetches everything; we filter by
+        team_ids locally to preserve the free-tier quota.
         """
         today = dt.date.today()
         params = {"dateFrom": (today - dt.timedelta(days=1)).isoformat(),
@@ -63,9 +68,10 @@ class FootballDataProvider(Provider):
         return out
 
     def last_goal(self, match_id: int) -> GoalDetail | None:
-        """比赛详情接口的 goals[] 取最近一粒进球（进球者英文名、分钟、进球方）。
+        """Latest goal from the match-detail endpoint's goals[] (scorer's
+        English name, minute, scoring team).
 
-        每粒进球只多花 1 个请求，远在免费档限频内。
+        Costs one extra request per goal — far within the free-tier limit.
         """
         try:
             data = self._get(f"/matches/{match_id}")
@@ -85,7 +91,8 @@ class FootballDataProvider(Provider):
     # ── probe ──────────────────────────────────────────────────────
 
     def probe(self) -> ProbeResult:
-        """验证连通性、token、赛事覆盖与限频信息（供 `python -m goal_poller probe`）。"""
+        """Verify connectivity, the token, competition coverage and rate-limit
+        headroom (backs `python -m goal_poller probe`)."""
         if not self._token:
             return ProbeResult(ok=False, detail="api_token not set (register free at football-data.org)")
         try:
@@ -115,7 +122,7 @@ class FootballDataProvider(Provider):
         except httpx.HTTPError as e:
             return ProbeResult(ok=False, detail=f"Network error: {e!r} (check proxy settings)")
 
-    # ── 内部 ──────────────────────────────────────────────────────
+    # ── internals ──────────────────────────────────────────────────
 
     def _get(self, path: str, params: dict | None = None) -> dict:
         resp = self._client.get(path, params=params)
@@ -126,11 +133,12 @@ class FootballDataProvider(Provider):
     def _to_match(m: dict) -> Match:
         score = m.get("score", {})
         full = score.get("fullTime", {}) or {}
-        # 进行中比赛 fullTime 可能为 null，回退到 halfTime/regularTime 已计入的当前比分
+        # fullTime can be null mid-match; fall back to zero defensively
         home_goals = full.get("home")
         away_goals = full.get("away")
         if home_goals is None or away_goals is None:
-            # v4 进行中比赛的当前比分也在 fullTime 给出；双保险取 0
+            # v4 also reports the running score in fullTime for live matches;
+            # the zero fallback is belt-and-braces
             home_goals = home_goals or 0
             away_goals = away_goals or 0
         utc_ts = 0.0

@@ -1,6 +1,7 @@
--- goal-kick 像素小人帧数据（纯数据文件，v1.0 Tauri 移植直接复用）
--- 每帧为字符网格：行字符串数组，字符 → palette 键的映射见 legend；"." 为透明
--- 网格朝向：小人面向右
+-- goal-kick pixel-runner frames (pure data; reused as-is by the v1.0 Tauri port)
+-- Each frame is a character grid (array of row strings); characters map to
+-- palette keys via `legend`; "." is transparent.
+-- Grid orientation: the runner faces right.
 local legend = {
   H = "hair",
   S = "skin",
@@ -10,7 +11,7 @@ local legend = {
   B = "boots",
 }
 
--- 奔跑帧 A：前腿迈出
+-- run frame A: front leg extended
 local runA = {
   "...HHH....",
   "...HSS....",
@@ -25,7 +26,7 @@ local runA = {
   ".......BB.",
 }
 
--- 奔跑帧 B：双腿交换
+-- run frame B: legs swapped
 local runB = {
   "...HHH....",
   "...HSS....",
@@ -40,7 +41,7 @@ local runB = {
   "..BB..BB..",
 }
 
--- 射门帧：右腿高抬踢出
+-- kick frame: right leg raised for the strike
 local kick = {
   "...HHH....",
   "...HSS....",
@@ -55,7 +56,7 @@ local kick = {
   "..........",
 }
 
--- 庆祝帧：双臂高举
+-- cheer frame: both arms raised
 local cheer = {
   ".S.....S..",
   ".SS...SS..",
@@ -72,8 +73,8 @@ local cheer = {
 
 return {
   legend = legend,
-  -- 跳出/下落阶段复用奔跑帧 A（蜷腿姿态差异在 v0.1 不做）
+  -- the jump/fall phase reuses run frame A (a tucked-leg pose is out of scope for v0.1)
   frames = { runA = runA, runB = runB, kick = kick, cheer = cheer },
-  -- 网格尺寸（所有帧一致）：渲染端据此把网格映射到目标像素尺寸
+  -- grid size (identical for all frames): the renderer maps it to target pixels
   grid = { cols = 10, rows = 11 },
 }

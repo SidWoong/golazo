@@ -1,8 +1,9 @@
-"""config.json 读写与 CLI 子命令实现。
+"""config.json access and the CLI subcommand backend.
 
-config.json 是机器管理文件：除 statusline.sh 只读 wrapped_statusline_cmd 外，
-一切修改必须经由 `python -m goal_poller config <子命令>`（防手写 JSON 损坏格式）。
-Schema 见 shared/state-schema.md。
+config.json is a machine-managed file: apart from statusline.sh reading
+wrapped_statusline_cmd, every mutation must go through
+`python -m goal_poller config <subcommand>` (hand-written JSON risks corruption).
+Schema: shared/state-schema.md.
 """
 from __future__ import annotations
 
@@ -26,12 +27,13 @@ DEFAULTS: dict[str, Any] = {
     "scoreboard_hold_min": 10,
     "wrapped_statusline_cmd": "",
     "muted_until": 0,
-    "lang": "auto",          # 展示语言：zh / en / auto（auto 按系统 locale 判定）
+    "lang": "auto",          # display language: zh / en / auto (auto = system locale)
 }
 
 
 def resolve_lang(cfg: dict[str, Any]) -> str:
-    """解析展示语言。auto 时读系统 locale（LC_ALL > LANG），中文环境 zh，其余 en。"""
+    """Resolve the display language. For auto, read the system locale
+    (LC_ALL > LANG): Chinese locales get zh, everything else en."""
     lang = str(cfg.get("lang", "auto")).lower()
     if lang in ("zh", "en"):
         return lang
@@ -40,7 +42,7 @@ def resolve_lang(cfg: dict[str, Any]) -> str:
 
 
 def atomic_write_json(path: Path, data: dict) -> None:
-    """同目录临时文件 + rename 原子覆盖，读取方永远不见半个 JSON。"""
+    """Write a temp file in the same dir, then rename — readers never see half a JSON."""
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
     try:
@@ -54,7 +56,7 @@ def atomic_write_json(path: Path, data: dict) -> None:
 
 
 def load() -> dict[str, Any]:
-    """读取配置并补齐缺省键；文件不存在/损坏时返回纯默认值。"""
+    """Load config, filling in defaults; a missing/corrupt file yields pure defaults."""
     cfg = dict(DEFAULTS)
     try:
         on_disk = json.loads(config_path().read_text(encoding="utf-8"))
@@ -71,7 +73,8 @@ def save(cfg: dict[str, Any]) -> None:
 
 def add_team(cfg: dict, *, name_zh: str, name_en: str, flag: str,
              provider_team_id: int | None = None) -> bool:
-    """加入关注列表；已存在（按 name_en 判重）则更新字段。返回是否新增。"""
+    """Add a team to the followed list; if already present (keyed by name_en),
+    refresh its fields instead. Returns True when newly added."""
     for t in cfg["followed_teams"]:
         if t.get("name_en") == name_en:
             t.update(name_zh=name_zh, flag=flag)
@@ -88,7 +91,8 @@ def add_team(cfg: dict, *, name_zh: str, name_en: str, flag: str,
 
 
 def remove_team(cfg: dict, keyword: str) -> list[str]:
-    """按关键词（中/英文名、子串）移除关注球队，返回被移除的中文名列表。"""
+    """Remove followed teams matching the keyword (zh/en substring).
+    Returns the Chinese names of the removed teams."""
     kw = keyword.strip().lower()
     removed = [t for t in cfg["followed_teams"]
                if kw in t.get("name_zh", "").lower() or kw in t.get("name_en", "").lower()]

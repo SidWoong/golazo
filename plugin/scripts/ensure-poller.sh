@@ -1,21 +1,23 @@
 #!/bin/bash
-# SessionStart hook：确保 poller 守护进程存活，不存活则拉起
-# 幂等、静音（hook 内输出会进入会话上下文，保持简短）；失败不阻塞会话启动
+# SessionStart hook: make sure the poller daemon is alive, spawning it if not.
+# Idempotent and quiet (hook output lands in the session context — keep it
+# short); failures never block session startup.
 
 GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
 PID_FILE="$GK_DIR/poller.pid"
 LOG_FILE="$GK_DIR/poller.log"
 CONFIG_FILE="$GK_DIR/config.json"
 
-# 未完成 setup（无配置）则什么都不做
+# Setup not completed (no config) → nothing to do
 [ -r "$CONFIG_FILE" ] || exit 0
 
-# 世界杯已结束则不再拉起（poller 自身也会在该日期后自动退出）
+# Don't respawn once the World Cup is over (the poller also exits by itself
+# after that date)
 if [ "$(date +%Y%m%d)" -gt 20260719 ]; then
   exit 0
 fi
 
-# pid 文件存在且进程存活 → 无事可做
+# pid file present and the process alive → nothing to do
 if [ -r "$PID_FILE" ]; then
   pid=$(cat "$PID_FILE" 2>/dev/null)
   if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
@@ -23,7 +25,8 @@ if [ -r "$PID_FILE" ]; then
   fi
 fi
 
-# 选择 Python 解释器：优先 install.sh 创建的专属 venv，回退系统 python3
+# Pick a Python interpreter: the dedicated venv created by install.sh first,
+# the system python3 as a fallback
 PYTHON="$GK_DIR/venv/bin/python"
 [ -x "$PYTHON" ] || PYTHON=$(command -v python3 || true)
 [ -n "$PYTHON" ] || exit 0

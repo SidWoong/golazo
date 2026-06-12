@@ -1,20 +1,25 @@
 #!/bin/bash
-# 手动触发一次完整进球特效链路（供 /goal-kick:test 与开发调试使用）
-# 行为：向 state.json 原子写入一条伪造进球事件 → 若 Hammerspoon 可用则调起覆盖层动画
-# 用法：trigger-test.sh [--team 名称] [--opponent 名称] [--score 比分] [--scorer 进球者] [--no-overlay]
+# Manually trigger one full goal-effect chain (used by /goal-kick:test and for
+# development).
+# Behavior: atomically write a fabricated goal event into state.json → invoke
+# the overlay animation if Hammerspoon is available.
+# Usage: trigger-test.sh [--team NAME] [--opponent NAME] [--score X-Y]
+#        [--scorer NAME] [--minute N] [--flag EMOJI]
+#        [--jersey/--stripe/--shorts #hex] [--no-overlay]
 
 set -eu
 
 GK_DIR="${GOAL_KICK_DIR:-$HOME/.claude/goal-kick}"
 STATE_FILE="$GK_DIR/state.json"
 
-# 默认场面：上一届（2022 卡塔尔）世界杯决赛，梅西加时 108 分钟进球（阿根廷 3-2 法国）
+# Default scene: the 2022 Qatar World Cup final — Messi's 108th-minute goal
+# (Argentina 3-2 France). Team names follow the system locale.
 case "${LC_ALL:-${LANG:-}}" in
   zh*) TEAM="阿根廷"; OPPONENT="法国"; SCORER="梅西" ;;
   *)   TEAM="Argentina"; OPPONENT="France"; SCORER="Messi" ;;
 esac
 FLAG="🇦🇷"; SCORE="3-2"; MINUTE=108
-JERSEY="#74acdf"; STRIPE="#ffffff"; SHORTS="#1a1a2e"   # 阿根廷主场球衣
+JERSEY="#74acdf"; STRIPE="#ffffff"; SHORTS="#1a1a2e"   # Argentina home kit
 NO_OVERLAY=0
 
 TEAM_SET=0; JERSEY_SET=0
@@ -34,12 +39,14 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# 显式换队但未给球衣 → 丢弃默认的阿根廷球衣（避免张冠李戴），overlay 用默认配色
+# An explicit team without an explicit kit → drop the default Argentina kit
+# (no jersey mix-ups); the overlay falls back to its default palette
 if [ "$TEAM_SET" = 1 ] && [ "$JERSEY_SET" = 0 ]; then
   JERSEY=""; STRIPE=""; SHORTS=""
 fi
 
-# 球衣三色齐全才写 kit 字段，否则 overlay 使用默认配色
+# Only write the kit field when all three colors are present; the overlay uses
+# its default palette otherwise
 KIT_JSON=""
 if [ -n "$JERSEY" ] && [ -n "$STRIPE" ] && [ -n "$SHORTS" ]; then
   KIT_JSON=",
@@ -49,14 +56,16 @@ fi
 mkdir -p "$GK_DIR"
 NOW=$(date +%s)
 
-# 时间轴与 shared/state-schema.md 的 goal 类型默认值一致；测试事件比分常驻缩短为 2 分钟
+# Timeline matches the goal-type defaults in shared/state-schema.md; the test
+# event's scoreboard hold is shortened to 2 minutes
 if [ "$NO_OVERLAY" -eq 1 ]; then
   OV_END=3.0; HOLD_START=3.0; HOLD_END=123.0
 else
   OV_END=11.2; HOLD_START=11.2; HOLD_END=131.2
 fi
 
-# 原子写：同目录临时文件 + mv 覆盖（rename 原子性保证读取方不见半个 JSON）
+# Atomic write: temp file in the same dir + mv (rename atomicity means readers
+# never see half a JSON)
 TMP=$(mktemp "$GK_DIR/.state.json.XXXXXX")
 cat > "$TMP" <<EOF
 {
@@ -89,7 +98,7 @@ if [ "$NO_OVERLAY" -eq 1 ]; then
   exit 0
 fi
 
-# 调起 Hammerspoon 覆盖层（hs CLI 需在 setup 时通过 hs.ipc 安装）
+# Invoke the Hammerspoon overlay (the hs CLI is installed via hs.ipc during setup)
 if command -v hs >/dev/null 2>&1; then
   if hs -c "spoon.GoalKick:play()" >/dev/null 2>&1; then
     echo "🎬 已调起桌面覆盖层动画。"

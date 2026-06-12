@@ -1,4 +1,5 @@
-"""守护进程主循环：智能轮询间隔、指数退避、心跳落盘、世界杯结束自动退出。"""
+"""Daemon main loop: adaptive polling intervals, exponential backoff,
+heartbeat file, automatic exit once the World Cup is over."""
 from __future__ import annotations
 
 import datetime as dt
@@ -13,10 +14,10 @@ from .dispatcher import dispatch
 from .paths import pid_path, status_path
 from .providers import make_provider
 
-WORLD_CUP_END = dt.date(2026, 7, 19)   # 决赛日；次日起自动退出（需求 §4.4）
+WORLD_CUP_END = dt.date(2026, 7, 19)   # final's date; exit automatically afterwards (spec §4.4)
 BACKOFF_START = 20
 BACKOFF_CAP = 300
-PRE_MATCH_LEAD = 300                    # 开赛前 5 分钟恢复高频轮询
+PRE_MATCH_LEAD = 300                    # resume fast polling 5 min before kickoff
 
 
 def _heartbeat(state: str, next_poll_in: float, extra: dict | None = None) -> None:
@@ -31,7 +32,8 @@ def _heartbeat(state: str, next_poll_in: float, extra: dict | None = None) -> No
 
 
 def _resolve_team_ids(provider, cfg: dict) -> bool:
-    """为缺少 provider_team_id 的关注球队在线解析 id。返回是否有更新。"""
+    """Resolve provider_team_id online for followed teams that lack one.
+    Returns True when anything was updated."""
     pending = [t for t in cfg["followed_teams"] if not t.get("provider_team_id")]
     if not pending:
         return False
@@ -53,7 +55,8 @@ def _resolve_team_ids(provider, cfg: dict) -> bool:
 
 
 def _enrich_scorer(provider, ev) -> None:
-    """进球事件补查进球者（列表接口不含人名）。失败静默——没有人名也照常庆祝。"""
+    """Backfill the scorer for goal events (list endpoints carry no names).
+    Failures are silent — a goal without a name still gets celebrated."""
     if ev.type not in ("goal", "opponent_goal"):
         return
     try:
@@ -63,7 +66,8 @@ def _enrich_scorer(provider, ev) -> None:
     if not detail:
         return
     scoring_id = ev.match.home_id if ev.scoring_side == "home" else ev.match.away_id
-    # 防错配：详情里最近一粒进球必须属于本次检测到的进球方
+    # Mismatch guard: the latest goal in the detail feed must belong to the
+    # side we just detected scoring
     if detail.team_id and detail.team_id != scoring_id:
         return
     if detail.scorer:
@@ -73,7 +77,7 @@ def _enrich_scorer(provider, ev) -> None:
 
 
 def run_loop(*, once: bool = False) -> None:
-    """主循环。once=True 时只执行一轮（测试用）。"""
+    """Main loop. once=True runs a single iteration (for tests)."""
     pid_path().parent.mkdir(parents=True, exist_ok=True)
     pid_path().write_text(str(os.getpid()), encoding="utf-8")
 
@@ -119,14 +123,15 @@ def run_loop(*, once: bool = False) -> None:
             if once:
                 return
             time.sleep(backoff)
-            backoff = min(backoff * 2, BACKOFF_CAP)   # 20→40→…→300 指数退避
+            backoff = min(backoff * 2, BACKOFF_CAP)   # 20→40→…→300 exponential backoff
             continue
 
         for ev in detector.process(matches, ids):
             _enrich_scorer(provider, ev)
             dispatch(ev, cfg)
 
-        # 智能间隔：有进行中比赛 → 高频；否则休眠到下一场开赛前 5 分钟（期间低频校对）
+        # Adaptive interval: a live followed match → fast polling; otherwise
+        # sleep until 5 min before the next kickoff (low-frequency checks meanwhile)
         now = time.time()
         if any(m.in_play for m in matches):
             sleep_sec = cfg["poll_interval_sec"]

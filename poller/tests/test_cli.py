@@ -1,4 +1,4 @@
-"""CLI 子命令：config 增删查、mute 表达式解析、未知键防护。"""
+"""CLI subcommands: config add/remove/search, mute expression parsing, unknown-key guard."""
 import json
 import time
 
@@ -17,7 +17,7 @@ def test_add_search_remove_team(capsys):
     assert main(["config", "list"]) == 0
     assert "阿根廷" in capsys.readouterr().out
 
-    # 别名与模糊匹配
+    # aliases and fuzzy matching
     assert main(["config", "search-team", "南韩"]) == 0
     assert "South Korea" in capsys.readouterr().out
 
@@ -27,7 +27,7 @@ def test_add_search_remove_team(capsys):
 
 
 def test_add_team_ambiguous(capsys):
-    # “刚果”同时命中刚果民主共和国的多个别名仍是一队 → 成功；“尼”类宽词应报多义
+    # "刚果" hits several aliases of the same team (DR Congo) → still unambiguous, succeeds
     assert main(["config", "add-team", "刚果"]) == 0
     capsys.readouterr()
 
@@ -50,7 +50,7 @@ def test_mute_expressions():
     assert parse_mute_expr("90秒", now) == now + 90
     assert parse_mute_expr("1.5小时", now) == now + 5400
     assert parse_mute_expr("off", now) == 0.0
-    assert parse_mute_expr("今天", now) > time.time()   # 今晚零点之前恒为未来
+    assert parse_mute_expr("今天", now) > time.time()   # always in the future until tonight's midnight
     with pytest.raises(ValueError):
         parse_mute_expr("永远", now)
 

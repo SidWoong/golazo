@@ -1,9 +1,11 @@
 #!/bin/bash
-# goal-kick 一键安装脚本（幂等，可重复执行；/goal-kick:setup 内部调用）
-# 职责：依赖检测 → Python 运行时（优先 uv，回退 venv）→ 安装 poller →
-#       落地 statusline/trigger 脚本到稳定路径 → 安装 Hammerspoon Spoon
-# 不做的事：写用户 settings.json（statusline 注册由 setup 对话确认后处理）
-# 输出双语：按系统 locale 自动选择中文/英文
+# goal-kick one-shot installer (idempotent, safe to re-run; called from /goal-kick:setup)
+# Responsibilities: dependency checks → Python runtime (uv preferred, venv fallback)
+#   → install the poller → copy statusline/trigger scripts to a stable path
+#   → install the Hammerspoon Spoon
+# Out of scope: writing the user settings.json (statusline registration is
+#   confirmed conversationally during setup)
+# Bilingual output: Chinese/English picked from the system locale
 
 set -eu
 
@@ -56,7 +58,8 @@ fi
 ok "goal_poller CLI 可用" "goal_poller CLI works"
 
 step "落地脚本到稳定路径 → $BIN_DIR" "Copying scripts to stable path → $BIN_DIR"
-# settings.json 引用的命令路径不能随插件更新漂移，故复制而非引用插件目录
+# the command path referenced by settings.json must not drift across plugin
+# updates, hence copies instead of references into the plugin dir
 cp -f "$REPO_DIR/plugin/scripts/statusline.sh" "$BIN_DIR/statusline.sh"
 cp -f "$REPO_DIR/plugin/scripts/trigger-test.sh" "$BIN_DIR/trigger-test.sh"
 chmod +x "$BIN_DIR"/*.sh

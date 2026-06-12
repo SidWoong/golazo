@@ -1,7 +1,8 @@
-"""CLI 入口：python -m goal_poller <子命令>
+"""CLI entry point: python -m goal_poller <subcommand>
 
-斜杠命令（plugin/commands/*.md）只通过这里的子命令读写配置，禁止手写 JSON。
-输出为英文行文本（开源惯例；中文用户经 Claude 中转交互）。
+Slash commands (plugin/commands/*.md) read/write config exclusively through
+these subcommands — hand-written JSON is forbidden. Output is plain English
+lines (open-source convention; Chinese users interact via Claude anyway).
 """
 from __future__ import annotations
 
@@ -18,7 +19,7 @@ from .paths import base_dir, status_path
 from .providers import make_provider
 
 
-# ── config 子命令 ──────────────────────────────────────────────────────────
+# ── config subcommands ─────────────────────────────────────────────────────
 
 def cmd_config(args: argparse.Namespace) -> int:
     cfg = cfgmod.load()
@@ -54,7 +55,7 @@ def cmd_config(args: argparse.Namespace) -> int:
         t = hits[0]
         added = cfgmod.add_team(cfg, name_zh=t["name_zh"], name_en=t["name_en"],
                                 flag=t["flag"])
-        # 有 token 时顺手在线解析 provider_team_id（失败不阻塞，poller 会重试）
+        # With a token at hand, resolve provider_team_id online right away (failures are non-blocking; the poller retries)
         if cfg["api_token"]:
             try:
                 for at in make_provider(cfg).list_teams(""):
@@ -91,7 +92,7 @@ def cmd_config(args: argparse.Namespace) -> int:
             return 1
         default = cfgmod.DEFAULTS[args.key]
         raw = args.value
-        # 按默认值类型转换
+        # coerce to the type of the default value
         value: object = raw
         if isinstance(default, bool):
             value = raw.lower() in ("1", "true", "yes", "on", "开")
@@ -114,7 +115,7 @@ def cmd_config(args: argparse.Namespace) -> int:
 # ── mute ───────────────────────────────────────────────────────────────────
 
 def parse_mute_expr(expr: str, now: float | None = None) -> float:
-    """'2h' / '30m' / '90s' / '今天' / 'off' → muted_until epoch 秒（0 表示取消静音）。"""
+    """'2h' / '30m' / '90s' / '今天'(today) / 'off' → muted_until epoch seconds (0 = unmute)."""
     now = time.time() if now is None else now
     e = expr.strip().lower()
     if e in ("off", "0", "取消", "解除"):
@@ -186,7 +187,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
-# ── 入口 ───────────────────────────────────────────────────────────────────
+# ── entry point ────────────────────────────────────────────────────────────
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="goal_poller", description="goal-kick goal-watch daemon")

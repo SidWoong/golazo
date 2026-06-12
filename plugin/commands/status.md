@@ -1,12 +1,12 @@
 ---
-description: 查看关注列表、poller 运行状态与近期赛程比分
+description: Show followed teams, poller health and recent scores
 ---
 
-执行以下命令并把结果整理成用户所用语言的简洁汇报：
+Run the following and compose a concise report in the user's language:
 
-1. `~/.claude/goal-kick/venv/bin/python -m goal_poller status` —— 关注列表、静音状态、poller 心跳（pid / 上次轮询时间 / 窗口内比赛数）。
-2. 若 poller 心跳缺失或进程不在，提示可运行 `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-poller.sh"` 拉起。
-3. 读取 `~/.claude/goal-kick/state.json`（若存在）：有未过期事件时把当前比分/事件告诉用户。
-4. 若用户配置了 api_token，可再跑 `python -m goal_poller probe` 顺带确认数据源健康（注意免费档限频，不要反复调用）。
+1. `~/.claude/goal-kick/venv/bin/python -m goal_poller status` — followed teams, mute state, poller heartbeat (pid / last poll / matches in window).
+2. If the heartbeat is missing or the process is gone, mention that `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-poller.sh"` restarts it.
+3. Read `~/.claude/goal-kick/state.json` (if present): report the current score/event when one is still inside its display window.
+4. If an api_token is configured you may additionally run `python -m goal_poller probe` to confirm data-source health (mind the free-tier rate limit — don't call it repeatedly).
 
-汇报格式建议：关注球队一行、poller 状态一行、今日相关比赛各一行（含比分与状态）。
+Suggested format: one line for followed teams, one for poller health, one per relevant match today (score and status).

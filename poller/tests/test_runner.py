@@ -1,4 +1,4 @@
-"""mock provider 驱动 run_loop：完整链路（轮询→检测→分发→state.json 落盘）。"""
+"""run_loop driven by a mock provider: the full chain (poll → detect → dispatch → state.json)."""
 import json
 
 from goal_poller import config as cfgmod
@@ -8,7 +8,7 @@ from goal_poller.providers.base import Match, Provider, Team
 
 
 class MockProvider(Provider):
-    """按预设脚本逐轮返回比分序列。"""
+    """Returns a scripted score sequence, one entry per polling round."""
     name = "fd"
 
     def __init__(self, script):
@@ -30,7 +30,7 @@ class MockProvider(Provider):
 def setup_cfg():
     cfg = cfgmod.load()
     cfg["api_token"] = "dummy"
-    cfg["lang"] = "zh"          # 测试断言中文展示名，与运行环境 locale 解耦
+    cfg["lang"] = "zh"          # assertions expect Chinese display names; decouple from the host locale
     cfgmod.add_team(cfg, name_zh="阿根廷", name_en="Argentina", flag="🇦🇷",
                     provider_team_id=762)
     cfgmod.save(cfg)
@@ -42,16 +42,16 @@ def test_full_chain_goal_to_state(monkeypatch):
     monkeypatch.setattr(runner, "make_provider", lambda cfg: mock)
     monkeypatch.setattr("goal_poller.dispatcher._trigger_overlay", lambda: True)
 
-    runner.run_loop(once=True)                 # 第一轮：建立 0-0 基线
+    runner.run_loop(once=True)                 # round 1: establish the 0-0 baseline
     assert not state_path().exists()
 
-    runner.run_loop(once=True)                 # 第二轮：1-0 → 进球
+    runner.run_loop(once=True)                 # round 2: 1-0 → goal
     st = json.loads(state_path().read_text())
     assert st["event"]["type"] == "goal" and st["event"]["team"] == "阿根廷"
     assert st["event"]["score"] == "1-0"
     first_id = st["event"]["id"]
 
-    runner.run_loop(once=True)                 # 第三轮：重复推送 → 不覆盖新事件
+    runner.run_loop(once=True)                 # round 3: duplicate push → state not overwritten
     assert json.loads(state_path().read_text())["event"]["id"] == first_id
 
     hb = json.loads(status_path().read_text())
@@ -84,7 +84,7 @@ def test_scorer_mismatched_team_not_applied(monkeypatch):
 
     class WrongTeam(MockProvider):
         def last_goal(self, match_id):
-            # 详情接口返回的最近进球属于对手（数据滞后）→ 不得错配到本队进球
+            # the detail feed's latest goal belongs to the opponent (lagging data) → must not be misattributed
             return GoalDetail(scorer="Kylian Mbappé", minute=80, team_id=773)
 
     mock = WrongTeam([(0, 0), (1, 0)])
