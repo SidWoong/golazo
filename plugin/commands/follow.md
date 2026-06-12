@@ -1,6 +1,6 @@
 ---
 description: Follow teams (multiple at once; fuzzy zh/en names and FIFA codes)
-argument-hint: <team names, e.g. "Argentina and Japan" / "阿根廷和日本">
+argument-hint: <team names, e.g. "Argentina and China" / "阿根廷和中国">
 ---
 
 The user wants to follow: $ARGUMENTS
