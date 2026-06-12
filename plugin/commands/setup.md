@@ -46,6 +46,17 @@ What to write into `~/.claude/settings.json` (preserve all other fields):
 ```
 `refreshInterval` is in seconds, minimum 1 (Claude Code ≥ 2.1.97; older versions don't support the field — check `claude --version`, omit the field if too old and explain the animation frame rate will be limited, recommending an upgrade).
 
+While editing settings.json, also ask: "Allow golazo's own commands to run without permission prompts? (Only covers golazo's CLI and scripts — real goal effects run in the background and never prompt anyway.)" If yes, merge these into the `permissions.allow` array (create it if absent, preserve existing entries):
+```json
+"permissions": {
+  "allow": [
+    "Bash(~/.claude/golazo/venv/bin/python *)",
+    "Bash(~/.claude/golazo/bin/*)"
+  ]
+}
+```
+If no, explain that slash commands like /golazo:test will ask for approval each time (they can pick "don't ask again" in the prompt later).
+
 ### Step 5: start the poller and wrap up
 
 Run `bash "${CLAUDE_PLUGIN_ROOT}/plugin/scripts/ensure-poller.sh"`, then `~/.claude/golazo/venv/bin/python -m golazo status` to confirm the heartbeat.
