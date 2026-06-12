@@ -79,6 +79,15 @@ def test_missed_window_no_replay():
     assert len(evs) == 1 and evs[0].event_id == "fd-100-goal-2"
 
 
+def test_cold_start_existing_score_not_celebrated():
+    # poller 冷启动时窗口里有一场已 2-0 的比赛（如已结束的揭幕战）→ 只建基线不庆祝
+    d = GoalDetector("fd")
+    assert d.process([mk(2, 0, status="FINISHED")], FOLLOWED, now=1000) == []
+    # 基线建立后的真实新进球照常触发
+    evs = d.process([mk(3, 0)], FOLLOWED, now=1020)
+    assert len(evs) == 1 and evs[0].event_id == "fd-100-goal-3"
+
+
 def test_unrelated_match_ignored():
     d = GoalDetector("fd")
     other = Match(id=200, status="IN_PLAY", home_id=1, home_name="A",
