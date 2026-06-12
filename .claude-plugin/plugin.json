@@ -1,7 +1,7 @@
 {
   "name": "golazo",
   "displayName": "Golazo ⚽",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "World Cup goal effects for your terminal: when your team scores, a pixel runner dashes along your terminal, leaps off its edge onto the desktop and kicks a GOOOAL celebration. 世界杯进球终端特效。",
   "author": {
     "name": "SidWoong",
