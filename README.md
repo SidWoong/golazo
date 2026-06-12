@@ -64,7 +64,11 @@ poller(Python 守护进程) ──写──▶ state.json ◀──读── sta
 setup 会检测并询问是否"包装"：你的命令原样保留在 `wrapped_statusline_cmd`，平时输出完全是它的结果，只有进球后的动画/比分窗口期才被接管。
 
 **API 免费档够用吗？**
-football-data.org 免费档约 10 请求/分钟。poller 每轮只发 1 个赛事级请求，比赛中 20 秒一轮（3 次/分钟），空闲时 5 分钟一轮，远低于限额。安装后运行 `python -m goal_poller probe` 实测覆盖与配额（结论会打印剩余配额）。
+football-data.org 免费档约 10 请求/分钟。poller 每轮只发 1 个赛事级请求，比赛中 20 秒一轮（3 次/分钟），空闲时 5 分钟一轮，远低于限额。安装后运行 `python -m goal_poller probe` 实测覆盖与配额。
+
+> **probe 实测结论（2026-06-12，世界杯开赛次日）**：免费档确认覆盖 2026 世界杯，
+> 赛事 code 为 `WC`，全部 104 场比赛可见，比分实时更新（揭幕战比分已验证）；
+> 进球者需经 `/v4/matches/{id}` 详情接口补查（poller 已实现）。限频实测 10 请求/分钟。
 
 **如何卸载？**
 仓库根目录运行 `bash uninstall.sh`：停 poller、还原你原有的 statusline 配置、移除 Spoon 与 init.lua 注册块、删除 `~/.claude/goal-kick`。最后 `/plugin uninstall goal-kick` 移除插件本体。
