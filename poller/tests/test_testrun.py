@@ -36,6 +36,22 @@ def test_testrun_team_override_and_rerun_no_dedupe(monkeypatch):
     assert second["id"] != first["id"]
 
 
+def test_testrun_custom_opponent_and_score(monkeypatch, capsys):
+    monkeypatch.setattr("golazo.dispatcher._trigger_overlay", lambda: True)
+    assert main(["test-run", "--delay", "0", "--team", "美国",
+                 "--opponent", "巴拉圭", "--score", "4-1"]) == 0
+    st = json.loads(state_path().read_text())["event"]
+    assert st["team"] == "美国" and st["opponent"] == "巴拉圭" and st["score"] == "4-1"
+    out = capsys.readouterr().out
+    assert "United States vs Paraguay" in out and "4-1 → GOAL" in out
+
+
+def test_testrun_rejects_bad_inputs():
+    assert main(["test-run", "--delay", "0", "--opponent", "火星"]) == 1   # not a WC team
+    assert main(["test-run", "--delay", "0", "--score", "1-3"]) == 1       # followed team trails
+    assert main(["test-run", "--delay", "0", "--score", "abc"]) == 1       # unparseable
+
+
 def test_testrun_respects_mute(monkeypatch, capsys):
     from golazo import config as cfgmod
     cfg = cfgmod.load()

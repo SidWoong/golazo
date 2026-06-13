@@ -223,7 +223,29 @@ def cmd_test_run(args: argparse.Namespace) -> int:
         steps, minute, scorer = [(2, 2), (3, 2)], 108, "Messi"
     else:
         steps, minute, scorer = [(0, 0), (1, 0)], 63, ""
-    opponent = "France" if entry["name_en"] != "France" else "Argentina"
+
+    # --opponent overrides the default rival (resolved through the same table)
+    if args.opponent:
+        opp_hits = teams.search(args.opponent)
+        if not opp_hits:
+            print(f"No 2026 World Cup team matches opponent '{args.opponent}'.")
+            return 1
+        opponent = opp_hits[0]["name_en"]
+    else:
+        opponent = "France" if entry["name_en"] != "France" else "Argentina"
+
+    # --score "4-1" sets the final scoreline; baseline stays 0-0, the goal poll
+    # jumps straight to it (the detector emits only the latest goal of the jump)
+    if args.score:
+        m = re.fullmatch(r"\s*(\d+)\s*[-:]\s*(\d+)\s*", args.score)
+        if not m:
+            print(f"Bad --score '{args.score}'; expected e.g. 4-1.")
+            return 1
+        h, a = int(m.group(1)), int(m.group(2))
+        if h <= a:
+            print(f"--score {h}-{a}: the followed team must come out ahead to celebrate a goal.")
+            return 1
+        steps = [(0, 0), (h, a)]
 
     # Unique match id per run so deterministic event ids never dedupe a re-test
     fixture = {"id": int(time.time()), "home_id": 990001, "home_name": entry["name_en"],
@@ -262,6 +284,8 @@ def main(argv: list[str] | None = None) -> int:
     test_p = sub.add_parser("test-run",
                             help="simulate a live goal through the real pipeline (mock API)")
     test_p.add_argument("--team", default="", help="team to score (zh/en/fuzzy); default: first followed team")
+    test_p.add_argument("--opponent", default="", help="opposing team (zh/en/fuzzy); default: France")
+    test_p.add_argument("--score", default="", help="final scoreline, e.g. 4-1 (followed team must lead)")
     test_p.add_argument("--delay", type=float, default=5.0,
                         help="seconds between the baseline poll and the goal poll (default 5)")
     test_p.set_defaults(fn=cmd_test_run)
