@@ -37,6 +37,8 @@ def test_testrun_team_override_and_rerun_no_dedupe(monkeypatch):
 
 
 def test_testrun_custom_opponent_and_score(monkeypatch, capsys):
+    from golazo import config as cfgmod
+    cfg = cfgmod.load(); cfg["lang"] = "zh"; cfgmod.save(cfg)   # pin display language
     monkeypatch.setattr("golazo.dispatcher._trigger_overlay", lambda: True)
     assert main(["test-run", "--delay", "0", "--team", "美国",
                  "--opponent", "巴拉圭", "--score", "4-1"]) == 0
